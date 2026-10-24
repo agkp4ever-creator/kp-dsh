@@ -3,7 +3,8 @@
  * 按本地日期滚动；持久化经 store 读-改-写 statsByDate。
  */
 import { dateKey } from '../shared/format';
-import type { DailyStats } from '../shared/types';
+import { buildHistory } from '../shared/history';
+import type { DailyStats, HistoryStats } from '../shared/types';
 import { logger } from './logger';
 import { readPersistData, writePersistData } from './store';
 
@@ -37,6 +38,23 @@ export class StatsService {
   /** 跨日后首次访问自动滚动到新的一天 */
   getToday(): DailyStats {
     return this.ensureToday();
+  }
+
+  /**
+   * 近 N 天历史统计（含今天，按日期升序，缺失日期补零）。
+   * 今天以内存值为准（可能还没落盘），历史日期读磁盘。
+   */
+  getHistory(days = 7): HistoryStats {
+    const today = this.getToday();
+    const saved = readPersistData().statsByDate;
+    return buildHistory(new Date(), { ...saved, [today.date]: today }, days);
+  }
+
+  /** 导入备份后从磁盘重载并广播（设置页/今日统计同步刷新） */
+  reload(): DailyStats {
+    this.load();
+    this.notify();
+    return this.getToday();
   }
 
   /** 完成一个番茄 +1 */

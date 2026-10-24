@@ -13,6 +13,7 @@ export const IpcChannels = {
   SETTINGS_UPDATE: 'settings:update',
   SETTINGS_CHANGED: 'settings:changed',
   STATS_GET: 'stats:get',
+  STATS_HISTORY: 'stats:history',
   STATS_CHANGED: 'stats:changed',
   WINDOW_SET_MODE: 'window:setMode',
   WINDOW_MODE_CHANGED: 'window:mode',
@@ -28,6 +29,8 @@ export const IpcChannels = {
   UPDATE_DOWNLOAD: 'update:download',
   UPDATE_INSTALL: 'update:install',
   UPDATE_STATUS: 'update:status',
+  DATA_EXPORT: 'data:export',
+  DATA_IMPORT: 'data:import',
   APP_QUIT: 'app:quit',
 } as const;
 

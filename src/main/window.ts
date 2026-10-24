@@ -351,7 +351,7 @@ export function persistWindowPos(win: BrowserWindow | null): void {
     const [x, y] = win.getPosition();
     const data = readPersistData();
     data.windowPos = { x, y };
-    writePersistData(data);
+    writePersistData(data, { backup: false });
   } catch (err) {
     logger.error('persist window pos failed', err);
   }

@@ -19,6 +19,7 @@ import {
 import { nextDndProbeDelayMs } from '../shared/dndPolicy';
 import type { DockState, RemindEvent, RemindKind, ThemeScheme, WindowMode } from '../shared/types';
 import { AutostartService } from './autostart';
+import { DataTransferService } from './dataTransfer';
 import { DndService } from './dnd';
 import { HealthReminderService } from './health';
 import { registerIpc } from './ipc';
@@ -505,12 +506,19 @@ app.whenReady().then(() => {
   updaterService = updater;
   updater.init();
 
+  const dataTransfer = new DataTransferService({
+    getWindow: () => mainWindow,
+    settingsService,
+    statsService,
+  });
+
   registerIpc({
     timer: timerService,
     settingsService,
     statsService,
     dndService,
     updater,
+    dataTransfer,
     setWindowMode,
     dock: handleDock,
     undock: handleUndock,

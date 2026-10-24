@@ -5,8 +5,11 @@ import { ipcMain, nativeTheme } from 'electron';
 import { IpcChannels, TIMER_COMMANDS, WINDOW_MODES } from '../shared/constants';
 import type {
   DailyStats,
+  DataBackupResult,
+  DataRestoreResult,
   DndState,
   DockState,
+  HistoryStats,
   IpcResult,
   Settings,
   TimerCommand,
@@ -15,6 +18,7 @@ import type {
   WindowMode,
 } from '../shared/types';
 import { logger } from './logger';
+import type { DataTransferService } from './dataTransfer';
 import type { DndService } from './dnd';
 import type { SettingsService } from './settings';
 import type { StatsService } from './stats';
@@ -34,6 +38,8 @@ export interface IpcDeps {
   undock: () => DockState;
   /** 自动更新（安装版；开发模式为 no-op） */
   updater: UpdaterService;
+  /** 数据备份/恢复（设置 + 历史统计） */
+  dataTransfer: DataTransferService;
   requestQuit: () => void;
 }
 
@@ -88,6 +94,38 @@ export function registerIpc(deps: IpcDeps): void {
   );
 
   ipcMain.handle(IpcChannels.STATS_GET, (): IpcResult<DailyStats> => ok(deps.statsService.getToday()));
+
+  ipcMain.handle(
+    IpcChannels.STATS_HISTORY,
+    (_event, raw: unknown): IpcResult<HistoryStats> => {
+      const days = typeof raw === 'number' && Number.isFinite(raw) ? raw : 7;
+      return ok(deps.statsService.getHistory(days));
+    }
+  );
+
+  ipcMain.handle(
+    IpcChannels.DATA_EXPORT,
+    async (): Promise<IpcResult<DataBackupResult | null>> => {
+      try {
+        return ok(await deps.dataTransfer.exportToFile());
+      } catch (err) {
+        logger.error('data export failed', err);
+        return fail(err instanceof Error ? err.message : '导出失败');
+      }
+    }
+  );
+
+  ipcMain.handle(
+    IpcChannels.DATA_IMPORT,
+    async (): Promise<IpcResult<DataRestoreResult | null>> => {
+      try {
+        return ok(await deps.dataTransfer.importFromFile());
+      } catch (err) {
+        logger.error('data import failed', err);
+        return fail(err instanceof Error ? err.message : '导入失败');
+      }
+    }
+  );
 
   ipcMain.handle(
     IpcChannels.WINDOW_SET_MODE,

@@ -3,7 +3,9 @@
  * 时长微调（专注/短休/长休）、音量/静音、开机自启、主题两选、护眼贴士、长休分档（P1-4 结构保留）。
  * 控件全部点按/滑杆（R2：focusable 切换由主进程窗口模式处理）。
  */
-import type { Settings, ThemeName, UpdateStatus } from '../../../shared/types';
+import type { HistoryStats, Settings, ThemeName, UpdateStatus } from '../../../shared/types';
+import { formatDurationMs } from '../../../shared/format';
+import { HistoryChart } from './HistoryChart';
 
 export interface SettingsPanelProps {
   settings: Settings;
@@ -13,6 +15,11 @@ export interface SettingsPanelProps {
   onCheckUpdate: () => void;
   onDownloadUpdate: () => void;
   onInstallUpdate: () => void;
+  /** 近 7 天历史（null = 尚未加载） */
+  history: HistoryStats | null;
+  dataMessage: string | null;
+  onExportData: () => void;
+  onImportData: () => void;
 }
 
 const FOCUS_MIN = 1;
@@ -127,6 +134,10 @@ export function SettingsPanel({
   onCheckUpdate,
   onDownloadUpdate,
   onInstallUpdate,
+  history,
+  dataMessage,
+  onExportData,
+  onImportData,
 }: SettingsPanelProps): JSX.Element {
   return (
     <section className="settings-panel">
@@ -256,6 +267,34 @@ export function SettingsPanel({
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="settings-panel__group">
+        <div className="setting-row">
+          <span className="setting-row__label">近 7 天</span>
+          <span className="setting-row__value">
+            {history === null
+              ? '—'
+              : `${history.totalPomodoros} 个 · ${formatDurationMs(history.totalFocusMs)}`}
+          </span>
+        </div>
+        <HistoryChart days={history?.days ?? []} />
+      </div>
+
+      <div className="settings-panel__group">
+        <div className="setting-row">
+          <span className="setting-row__label">数据备份</span>
+          <span className="setting-row__value">JSON</span>
+        </div>
+        <div className="update-actions">
+          <button type="button" className="btn btn--ghost" onClick={onExportData}>
+            导出备份
+          </button>
+          <button type="button" className="btn btn--ghost" onClick={onImportData}>
+            导入备份
+          </button>
+        </div>
+        {dataMessage !== null && <div className="update-status">{dataMessage}</div>}
       </div>
 
       <div className="settings-panel__group">

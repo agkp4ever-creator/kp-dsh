@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   DockState,
+  HistoryStats,
   RemindEvent,
   RemindKind,
   ThemeScheme,
@@ -49,6 +50,8 @@ export default function App(): JSX.Element {
   const [dockState, setDockState] = useState<DockState>({ docked: false, side: 'right' });
   const [scheme, setScheme] = useState<ThemeScheme>('dark');
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  const [history, setHistory] = useState<HistoryStats | null>(null);
+  const [dataMessage, setDataMessage] = useState<string | null>(null);
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -101,6 +104,22 @@ export default function App(): JSX.Element {
     });
     return unsubscribe;
   }, []);
+
+  // 历史统计：打开设置页时拉取；完成番茄/导入备份导致 stats 变化后刷新
+  useEffect(() => {
+    if (windowMode !== 'settings') {
+      return undefined;
+    }
+    let cancelled = false;
+    void window.pomodoro.stats.getHistory(7).then((result) => {
+      if (!cancelled && result.ok && result.data !== undefined) {
+        setHistory(result.data);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [windowMode, stats]);
 
   // 到点提醒：轻提示音 + 视觉闪动（勿扰中仅视觉；禁止系统通知/语音）
   useEffect(() => {
@@ -169,6 +188,30 @@ export default function App(): JSX.Element {
     void window.pomodoro.update.install();
   }, []);
 
+  const handleExportData = useCallback(() => {
+    void window.pomodoro.data.exportJson().then((result) => {
+      if (!result.ok) {
+        setDataMessage(result.error ?? '导出失败');
+        return;
+      }
+      if (result.data !== undefined && result.data !== null) {
+        setDataMessage(`已导出：${result.data.path}`);
+      }
+    });
+  }, []);
+
+  const handleImportData = useCallback(() => {
+    void window.pomodoro.data.importJson().then((result) => {
+      if (!result.ok) {
+        setDataMessage(result.error ?? '导入失败');
+        return;
+      }
+      if (result.data !== undefined && result.data !== null) {
+        setDataMessage('已导入备份：设置与历史统计已恢复');
+      }
+    });
+  }, []);
+
   const isBreak = state.phase !== 'focus';
   // 勿扰以主进程为准：手动开关 或 自动命中剪辑软件前台
   const quiet = dnd.quiet;
@@ -207,6 +250,10 @@ export default function App(): JSX.Element {
           onCheckUpdate={handleCheckUpdate}
           onDownloadUpdate={handleDownloadUpdate}
           onInstallUpdate={handleInstallUpdate}
+          history={history}
+          dataMessage={dataMessage}
+          onExportData={handleExportData}
+          onImportData={handleImportData}
         />
       </div>
     );

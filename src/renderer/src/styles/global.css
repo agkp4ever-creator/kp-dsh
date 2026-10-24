@@ -479,6 +479,54 @@ body {
   -webkit-app-region: no-drag;
 }
 
+/* 历史统计：近 7 天柱状图 */
+.history-chart {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px;
+  height: 64px;
+  padding: 2px 0 0;
+}
+
+.history-chart--empty {
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.history-chart__col {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+}
+
+.history-chart__value {
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.history-chart__bar {
+  width: 100%;
+  max-width: 18px;
+  border-radius: 3px 3px 0 0;
+  background: var(--ring-focus);
+  opacity: 0.85;
+}
+
+.history-chart__label {
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
 /* 自动更新状态与操作 */
 .update-status {
   font-size: 11px;

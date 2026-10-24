@@ -69,6 +69,26 @@ export interface DailyStats {
   focusMs: number;
 }
 
+// ---------- 历史统计（近 N 天，按日期升序，含今天） ----------
+export type HistoryDay = DailyStats;
+
+export interface HistoryStats {
+  days: HistoryDay[];
+  totalPomodoros: number;
+  totalFocusMs: number;
+}
+
+// ---------- 数据备份/恢复 ----------
+export interface DataBackupResult {
+  path: string;
+  bytes: number;
+}
+
+export interface DataRestoreResult {
+  settings: Settings;
+  statsByDate: Record<string, DailyStats>;
+}
+
 // ---------- 持久化文件 ----------
 export interface PersistData {
   settings: Settings;
@@ -146,6 +166,8 @@ export interface PomodoroApi {
   };
   stats: {
     get: () => Promise<IpcResult<DailyStats>>;
+    /** 近 N 天历史（默认 7 天，含今天） */
+    getHistory: (days?: number) => Promise<IpcResult<HistoryStats>>;
     onChanged: (callback: (stats: DailyStats) => void) => Unsubscribe;
   };
   window: {
@@ -175,6 +197,11 @@ export interface PomodoroApi {
     download: () => Promise<IpcResult<UpdateStatus>>;
     install: () => Promise<IpcResult<null>>;
     onStatus: (callback: (status: UpdateStatus) => void) => Unsubscribe;
+  };
+  /** 数据备份：导出/导入完整 JSON（设置 + 历史统计） */
+  data: {
+    exportJson: () => Promise<IpcResult<DataBackupResult | null>>;
+    importJson: () => Promise<IpcResult<DataRestoreResult | null>>;
   };
   app: {
     quit: () => Promise<IpcResult<null>>;

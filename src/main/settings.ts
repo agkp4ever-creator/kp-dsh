@@ -35,6 +35,14 @@ export class SettingsService {
     return this.get();
   }
 
+  /** 整体替换（导入备份用）：所有字段经白名单校验，落盘并广播 */
+  replace(next: Settings): Settings {
+    this.current = sanitizeSettings(next as unknown as Record<string, unknown>, DEFAULT_SETTINGS);
+    this.persist();
+    this.notify();
+    return this.get();
+  }
+
   onChange(listener: SettingsListener): void {
     this.listeners.push(listener);
   }

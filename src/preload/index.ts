@@ -5,8 +5,11 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { IpcChannels, TIMER_COMMANDS, WINDOW_MODES } from '../shared/constants';
 import type {
   DailyStats,
+  DataBackupResult,
+  DataRestoreResult,
   DndState,
   DockState,
+  HistoryStats,
   IpcResult,
   PomodoroApi,
   RemindEvent,
@@ -73,6 +76,9 @@ const api: PomodoroApi = {
     get: (): Promise<IpcResult<DailyStats>> => {
       return ipcRenderer.invoke(IpcChannels.STATS_GET);
     },
+    getHistory: (days?: number): Promise<IpcResult<HistoryStats>> => {
+      return ipcRenderer.invoke(IpcChannels.STATS_HISTORY, days);
+    },
     onChanged: (callback: (stats: DailyStats) => void): Unsubscribe => {
       return subscribe<DailyStats>(IpcChannels.STATS_CHANGED, callback);
     },
@@ -125,6 +131,14 @@ const api: PomodoroApi = {
     },
     onStatus: (callback: (status: UpdateStatus) => void): Unsubscribe => {
       return subscribe<UpdateStatus>(IpcChannels.UPDATE_STATUS, callback);
+    },
+  },
+  data: {
+    exportJson: (): Promise<IpcResult<DataBackupResult | null>> => {
+      return ipcRenderer.invoke(IpcChannels.DATA_EXPORT);
+    },
+    importJson: (): Promise<IpcResult<DataRestoreResult | null>> => {
+      return ipcRenderer.invoke(IpcChannels.DATA_IMPORT);
     },
   },
   app: {

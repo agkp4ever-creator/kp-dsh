@@ -23,6 +23,8 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.2.2
 | 桌面融合 | 240×240 透明无边框置顶窗，默认不占任务栏；拖拽顶栏移动；➖ 收起为 160×160 半透明紧凑态 |
 | 专注保护 | 自动识别 DaVinci Resolve 等剪辑软件在前台时进入勿扰，提醒只保留视觉变化；也可手动勿扰 |
 | 今日统计 | 今日完成番茄数、累计专注时长，本地持久化 |
+| 历史统计 | 设置页展示近 7 天番茄数柱状图与区间合计，缺失日期自动补零 |
+| 数据备份 | 一键导出完整 JSON（设置 + 历史统计），导入时校验并整体恢复；每次写入自动保留上一版 `.bak` |
 | 护眼与久坐 | 20-20-20 护眼提醒、45 分钟久坐起身提醒，均可单独开关与调间隔 |
 | 桌面常驻 | 托盘菜单（显示 / 设置 / 重启界面 / 退出）、关闭到托盘、开机自启 |
 | 视觉主题 | 极简黑白、番茄红、森林绿、深海蓝、薰衣草、跟随系统，共 6 套；除极简外随系统明暗切换 |
@@ -39,8 +41,8 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.2.2
 
 **安装版（推荐）**
 
-1. 打开 [Releases · v0.2.2](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.2.2)。
-2. 下载 `pomodoro-widget-setup-0.2.2.exe` 并安装。
+1. 打开 [Releases · v0.3.0](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.0)。
+2. 下载 `pomodoro-widget-setup-0.3.0.exe` 并安装。
 3. 安装版内置自动更新：设置 →「检查更新」，有新版本时下载并重启安装。
 
 **绿色版**
@@ -55,7 +57,7 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.2.2
 
 - **移动**：拖动顶栏空白处。
 - **收起**：点顶栏 `➖`，窗口缩到 160×160 并变为 62% 不透明度；点紧凑窗任意位置恢复。
-- **设置**：点 `⚙`，可调专注/短休/长休时长、长休间隔、音量与静音、护眼/久坐开关、开机自启、勿扰、主题，以及检查更新。
+- **设置**：点 `⚙`，可调专注/短休/长休时长、长休间隔、音量与静音、护眼/久坐开关、开机自启、勿扰、主题，查看近 7 天历史统计、导出/导入数据备份，以及检查更新。
 - **退出**：点 `✕` 退出；点窗口关闭按钮则收进托盘继续计时。
 - **托盘**：右键托盘图标可显示挂件、打开设置、重启界面或退出。
 
@@ -85,6 +87,13 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.2.2
 - 日志超过 1MB 轮转并保留 2 份；生产构建注入 CSP。
 
 ## 更新日志
+
+### v0.3.0
+
+- 新增：设置页近 7 天历史统计（柱状图 + 番茄数/专注时长合计），缺失日期补零，跨月正确。
+- 新增：数据备份导出/导入完整 JSON（设置 + 历史统计），导入前校验、2MB 上限，并保留当前窗口位置。
+- 新增：每次写数据自动保留上一版 `.bak`；主文件损坏时启动自动回退，窗口位置等高频写入不覆盖备份。
+- 测试：新增 `stats-data` 断言与 e2e（历史图、跳过统计、自动备份、损坏恢复）。
 
 ### v0.2.2
 
@@ -138,7 +147,7 @@ pomodoro_desktop_widget/
 │       ├── hooks/       useTimer · useSettings · useTheme
 │       ├── components/  TitleBar · TimerRing · ControlBar · SettingsPanel
 │       └── styles/      tokens.css · global.css
-├── tests/         assert 脚本 + e2e（smoke / crash-recovery / real-upgrade）
+├── tests/         assert 脚本 + e2e（smoke / crash-recovery / stats-data / real-upgrade）
 ├── scripts/       release · serve-updates · capture-screenshots
 └── docs/screenshots/
 ```
@@ -164,7 +173,8 @@ npm run dev
 
 ## 数据与隐私
 
-- 设置与统计保存在 `%APPDATA%/pomodoro_desktop_widget/pomodoro-data.json`，原子写入，损坏时回退默认值。
+- 设置与历史统计保存在 `%APPDATA%/pomodoro_desktop_widget/pomodoro-data.json`，原子写入；每次写入前保留 `.bak`，主文件损坏时启动自动回退上一版。
+- 设置页「数据备份」可导出完整 JSON（设置 + 历史统计），也可导入并校验后整体恢复；导入不会改变当前窗口位置。
 - 日志在 `%APPDATA%/pomodoro_desktop_widget/logs/app.log`，仅本地，不上传。
 - 应用不收集任何遥测；自动更新只访问 GitHub Releases。
 
@@ -172,13 +182,13 @@ npm run dev
 
 - 仅支持 Windows x64；未做代码签名。
 - 自动更新依赖 GitHub 可访问；国内网络可能需要代理。
-- 今日统计仅当日，暂无历史图表/导出。
+- 历史统计默认展示近 7 天，暂不支持自定义月份区间与 CSV 导出。
 - 暂无全局快捷键、任务命名、白噪音。
 - 勿扰自动检测当前匹配 DaVinci Resolve 等剪辑软件前台进程，其他软件可手动勿扰。
 
 ## 路线图
 
-- 周/月统计视图与 CSV 导出
+- 月度统计视图与 CSV 导出
 - 全局快捷键、任务标签
 - 白噪音与更丰富的提示音
 - 可选的开机启动到托盘 / 静默更新

@@ -2,7 +2,7 @@
  * JSON 文件持久化助手：userData/pomodoro-data.json，读容错、写原子（tmp + rename）。
  */
 import { app } from 'electron';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { DEFAULT_SETTINGS } from '../shared/constants';
 import { THEME_NAMES } from '../shared/types';
@@ -13,28 +13,54 @@ export function persistFilePath(): string {
   return join(app.getPath('userData'), 'pomodoro-data.json');
 }
 
-/** 读取持久化数据；文件缺失/损坏一律回退默认值，不抛出 */
-export function readPersistData(): PersistData {
-  try {
-    const file = persistFilePath();
-    if (!existsSync(file)) {
-      return createDefaultPersistData();
-    }
-    const raw = readFileSync(file, 'utf-8');
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed === null || typeof parsed !== 'object') {
-      return createDefaultPersistData();
-    }
-    return normalizePersistData(parsed as Partial<PersistData>);
-  } catch {
-    return createDefaultPersistData();
-  }
+/** 自动备份路径：每次写入前保存上一版，主文件损坏时回退 */
+export function backupFilePath(): string {
+  return `${persistFilePath()}.bak`;
 }
 
-/** 原子写入：先写 .tmp 再 rename 替换 */
-export function writePersistData(data: PersistData): void {
+/** 解析并清洗任意 JSON 对象；非对象返回 null（导入时用于拒绝非法文件） */
+export function parsePersistData(raw: unknown): PersistData | null {
+  if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+    return null;
+  }
+  return normalizePersistData(raw as Partial<PersistData>);
+}
+
+/** 读取持久化数据；主文件缺失/损坏时回退 .bak，仍失败则回退默认值，不抛出 */
+export function readPersistData(): PersistData {
+  for (const file of [persistFilePath(), backupFilePath()]) {
+    try {
+      if (!existsSync(file)) {
+        continue;
+      }
+      const parsed: unknown = JSON.parse(readFileSync(file, 'utf-8'));
+      const normalized = parsePersistData(parsed);
+      if (normalized !== null) {
+        return normalized;
+      }
+    } catch {
+      // 主文件损坏时继续尝试 .bak
+    }
+  }
+  return createDefaultPersistData();
+}
+
+/** 原子写入：先备份旧版（可按需关闭），再写 .tmp 并 rename 替换 */
+export function writePersistData(
+  data: PersistData,
+  options: { backup?: boolean } = {}
+): void {
   const file = persistFilePath();
   mkdirSync(dirname(file), { recursive: true });
+  // 备份失败不阻塞主写入（例如首次保存、磁盘只读）；
+  // 窗口位置等高频写入传 backup:false，避免把 .bak 刷成“最新版”
+  try {
+    if (options.backup !== false && existsSync(file)) {
+      copyFileSync(file, backupFilePath());
+    }
+  } catch {
+    // 忽略备份错误
+  }
   const tmp = `${file}.tmp`;
   writeFileSync(tmp, JSON.stringify(data, null, 2), 'utf-8');
   renameSync(tmp, file);
