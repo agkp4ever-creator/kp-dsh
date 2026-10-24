@@ -160,7 +160,8 @@ body {
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
-  transition: stroke var(--motion) ease, stroke-dashoffset var(--motion-fast) linear;
+  /* 圆环跟随 1s 快照直接跳变（每步 <0.25px，视觉无感）；不做 dashoffset 逐帧插值，避免高频重绘 */
+  transition: stroke var(--motion) ease;
 }
 
 .timer-ring--break .timer-ring__progress {

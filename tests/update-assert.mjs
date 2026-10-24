@@ -60,7 +60,12 @@ check('updater 延迟检查常量', constants.includes('UPDATE_CHECK_DELAY_MS'))
 check('index 组装 UpdaterService', index.includes('new UpdaterService'));
 check('index 托盘检查更新接线', index.includes('checkForUpdatesFromTray') && index.includes('checkForUpdates:'));
 check('tray 菜单含检查更新', tray.includes('检查更新'));
-check('打包配置 generic publish', builder.includes('provider: generic'));
+check(
+  '打包配置 GitHub publish',
+  builder.includes('provider: github') &&
+    builder.includes('owner: agkp4ever-creator') &&
+    builder.includes('repo: kp-dsh')
+);
 check('安装包 ASCII 文件名', builder.includes('pomodoro-widget-setup-${version}.exe'));
 check('electron-updater 为运行时依赖', pkg.dependencies?.['electron-updater'] !== undefined);
 check('release:win 脚本存在', typeof pkg.scripts?.['release:win'] === 'string');

@@ -50,26 +50,26 @@ try {
 
   console.log('① nextDndProbeDelayMs：勿扰探测按需降频');
   const base = { status: 'running', windowVisible: true, minimized: false, detectionAvailable: true };
-  check('运行中 + 可见 → 10s', dndPolicy.nextDndProbeDelayMs(base) === 10_000);
+  check('运行中 + 可见 → 30s', dndPolicy.nextDndProbeDelayMs(base) === 30_000);
   check(
-    '空闲 + 可见 → 60s',
-    dndPolicy.nextDndProbeDelayMs({ ...base, status: 'idle' }) === 60_000
+    '空闲 + 可见 → 120s',
+    dndPolicy.nextDndProbeDelayMs({ ...base, status: 'idle' }) === 120_000
   );
   check(
-    '暂停 + 可见 → 60s',
-    dndPolicy.nextDndProbeDelayMs({ ...base, status: 'paused' }) === 60_000
+    '暂停 + 可见 → 120s',
+    dndPolicy.nextDndProbeDelayMs({ ...base, status: 'paused' }) === 120_000
   );
   check(
-    '隐藏 → 120s（优先于运行态）',
-    dndPolicy.nextDndProbeDelayMs({ ...base, windowVisible: false }) === 120_000
+    '隐藏 → 300s（优先于运行态）',
+    dndPolicy.nextDndProbeDelayMs({ ...base, windowVisible: false }) === 300_000
   );
   check(
-    '最小化 → 120s',
-    dndPolicy.nextDndProbeDelayMs({ ...base, minimized: true }) === 120_000
+    '最小化 → 300s',
+    dndPolicy.nextDndProbeDelayMs({ ...base, minimized: true }) === 300_000
   );
   check(
-    '自动检测已降级 → 300s（优先于一切）',
-    dndPolicy.nextDndProbeDelayMs({ ...base, detectionAvailable: false }) === 300_000
+    '自动检测已降级 → 600s（优先于一切）',
+    dndPolicy.nextDndProbeDelayMs({ ...base, detectionAvailable: false }) === 600_000
   );
 
   console.log('② shouldRecreateRenderer：崩溃重建限流');
@@ -95,13 +95,16 @@ try {
   rmSync(staging, { recursive: true, force: true });
 }
 
-console.log('④ tick 1s + 渲染层 rAF 补间');
+console.log('④ tick 1s + 渲染层 10fps 补间');
 const constantsTs = source(join('src', 'shared', 'constants.ts'));
 check('TICK_INTERVAL_MS = 1000', /TICK_INTERVAL_MS = 1000/.test(constantsTs));
 const timerRingTs = source(join('src', 'renderer', 'src', 'components', 'TimerRing.tsx'));
 check('TimerRing 接收 endsAt', /endsAt: number/.test(timerRingTs));
-check('TimerRing 用 requestAnimationFrame 补间', /requestAnimationFrame\(/.test(timerRingTs));
+check('TimerRing 改为 1s 快照推进（RING_FRAME_MS=1000）', /RING_FRAME_MS = 1000/.test(timerRingTs));
+check('TimerRing 用 setInterval 补间', /setInterval\(update, RING_FRAME_MS\)/.test(timerRingTs));
 check('补间不倒退（Math.min(estimate, byWall)）', /Math\.min\(estimate, byWall\)/.test(timerRingTs));
+check('窗口隐藏时暂停补间', /visibilitychange/.test(timerRingTs));
+check('不再用 60fps requestAnimationFrame 刷状态', !/requestAnimationFrame\(/.test(timerRingTs));
 const appTs = source(join('src', 'renderer', 'src', 'App.tsx'));
 check('App 两处 TimerRing 都传 endsAt', (appTs.match(/endsAt=\{state\.endsAt\}/g) ?? []).length === 2);
 
@@ -114,7 +117,10 @@ check('监听 render-process-gone', /app\.on\('render-process-gone'/.test(indexT
 check('监听 child-process-gone', /app\.on\('child-process-gone'/.test(indexTs));
 check('崩溃重建走 decideCrashAction 决策', /decideCrashAction\(/.test(indexTs));
 check('重建共用 bindWindow（回推状态）', /function bindWindow/.test(indexTs));
-check('退出前清理勿扰调度句柄', /dndProbeTimer[\s\S]{0,120}clearTimeout/.test(indexTs));
+check(
+  '退出前停止勿扰调度（stopDndProbe）',
+  /function stopDndProbe/.test(indexTs) && /requestQuit[\s\S]{0,80}stopDndProbe\(\)/.test(indexTs)
+);
 
 const dndTs = source(join('src', 'main', 'dnd.ts'));
 check('DndService 不再常驻 setInterval', !/setInterval\(/.test(dndTs));
@@ -137,8 +143,18 @@ check(
   /win\.on\('show', \(\) => scheduleDndProbe\(0\)\)/.test(indexTs) &&
     /win\.on\('restore', \(\) => scheduleDndProbe\(0\)\)/.test(indexTs)
 );
-check('隐藏/最小化后按新可见性重排', /win\.on\('hide', \(\) => scheduleDndProbe\(\)\)/.test(indexTs));
+check(
+  '隐藏/最小化时暂停后台探测',
+  /win\.on\('hide', stopDndProbe\)/.test(indexTs) &&
+    /win\.on\('minimize', stopDndProbe\)/.test(indexTs)
+);
 check('计时状态变化时重排探测', /state\.status !== lastTimerStatus/.test(indexTs));
+check(
+  '提醒发送前即时探测前台（最多等 600ms）',
+  /async function flushReminds/.test(indexTs) &&
+    /service\.detectNow\(\)/.test(indexTs) &&
+    /setTimeout\(resolve, 600\)/.test(indexTs)
+);
 check(
   '崩溃配额只在通过限流后计入',
   indexTs.lastIndexOf('shouldRecreateRenderer(') < indexTs.indexOf('rendererCrashTimes.push(now)')

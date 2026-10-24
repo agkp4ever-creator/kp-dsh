@@ -35,4 +35,8 @@ console.log('\n发布产物：');
 console.log(`  latest.yml        ${latest}`);
 console.log(`  安装包            ${setup} (${mb(setup)} MB)`);
 console.log(`  更新配置          ${updateConfig}`);
-console.log('\n把 latest.yml 与安装包上传到 publish.url 指向的静态目录即可。');
+console.log(
+  '\n下一步：在 GitHub 创建 v' +
+    pkg.version +
+    ' Release，上传 latest.yml、安装包与 blockmap。'
+);

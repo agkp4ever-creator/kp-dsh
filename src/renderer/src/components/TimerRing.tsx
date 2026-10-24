@@ -1,7 +1,8 @@
 /**
  * TimerRing：SVG 细圆环倒计时 + mm:ss + 状态文案。圆环随剩余时间递减。
- * 主进程 tick 已放宽到 1s（降低常驻 CPU），运行态用 requestAnimationFrame
- * 按 endsAt 本地补间，保持 60fps 顺滑；每秒收到权威快照后校正，且不允许倒退。
+ * 主进程 tick 为 1s，运行态直接按权威快照推进圆环（1fps）。
+ * 240px 圆环 1s 仅转 1/1500 圈（<0.25px），肉眼不可见，没必要 60fps 重绘；
+ * 窗口隐藏/最小化时暂停补间；快照到达后校正，且不允许倒退。
  */
 import { useEffect, useState } from 'react';
 import { formatMmSs } from '../../../shared/format';
@@ -19,6 +20,8 @@ export interface TimerRingProps {
 
 const RADIUS = 52;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+/** 圆环推进间隔：跟随 1s 快照，避免高频 setState 重绘 */
+const RING_FRAME_MS = 1000;
 
 function captionFor(phase: Phase, status: TimerStatus): string {
   if (phase === 'focus') {
@@ -54,19 +57,53 @@ export function TimerRing({
       setDisplayMs(remainingMs);
       return undefined;
     }
+    const deadline = endsAt;
     // 快照到达时以它为准，本地只做「不倒退」的平滑估计
     const estimate = Math.min(totalMs, Math.max(0, remainingMs));
-    let frame = 0;
-    const tick = (): void => {
-      const byWall = endsAt !== null && endsAt > 0 ? endsAt - Date.now() : estimate;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const update = (): void => {
+      const byWall = deadline - Date.now();
       const next = Math.max(0, Math.min(estimate, byWall));
       setDisplayMs(next);
-      if (next > 0) {
-        frame = requestAnimationFrame(tick);
+      if (next <= 0 && timer !== null) {
+        clearInterval(timer);
+        timer = null;
       }
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+
+    const start = (): void => {
+      if (timer !== null) {
+        return;
+      }
+      update();
+      timer = setInterval(update, RING_FRAME_MS);
+    };
+
+    const stop = (): void => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const onVisibility = (): void => {
+      if (document.visibilityState === 'visible') {
+        start();
+      } else {
+        stop();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+    if (document.visibilityState === 'visible') {
+      start();
+    }
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [status, endsAt, totalMs, remainingMs]);
 
   const ratio = totalMs > 0 ? Math.min(1, Math.max(0, displayMs / totalMs)) : 0;

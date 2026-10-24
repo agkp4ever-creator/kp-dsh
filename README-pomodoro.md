@@ -1,150 +1,184 @@
-# 番茄钟桌面挂件（MVP）
+# 番茄钟桌面挂件
 
-不打扰剪辑节奏的常驻桌面番茄钟小窗：240×240 透明无边框、置顶、不抢焦点、不占任务栏，到点仅「轻提示音 + 视觉变化」（无系统弹窗、无语音）。
+> 不打扰剪辑节奏的常驻桌面番茄钟：240×240 透明置顶小窗，不抢焦点、不占任务栏，到点只轻提示。
 
-技术栈：Electron 31 + electron-vite 2 + React 18 + TypeScript 5（纯 CSS 设计 token，无 UI 框架）。
+Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.2.2
 
-## 环境要求
+<p align="center">
+  <img src="docs/screenshots/main.png" width="240" alt="主界面" />
+  <img src="docs/screenshots/compact.png" width="160" alt="紧凑态" />
+  <img src="docs/screenshots/settings.png" width="240" alt="设置面板" />
+</p>
 
-- Windows 10+（目标平台 22H2 x64）
-- Node.js 18+（本机使用 managed Node 22）
+## 为什么是挂件
 
-### 本机环境注意事项（重要）
+剪辑、写作或写代码时，全屏番茄钟会打断节奏。这个项目把计时器压缩成一个随时可见、但几乎不占注意力的小窗：无边框、置顶、默认不抢焦点，收起后只剩半透明的圆环和剩余时间。
 
-1. **`ELECTRON_RUN_AS_NODE=1` 必须清除**：WorkBuddy/VS Code 类终端会注入该变量，导致 Electron 以纯 Node 模式运行（`electron.app` 为 undefined，启动即崩）。启动前执行：
-   ```powershell
-   Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
-   ```
-2. **safe-delete shim 干扰构建（可选关闭）**：若构建时报 `[safe-delete][SAFE_DELETE_BULK_GUARD_ERROR] ... ENOENT`，执行 `$env:CODEBUDDY_SAFE_DELETE_ENABLED = '0'` 后重试。
-3. **dev server 已固定 IPv4**：`electron.vite.config.ts` 中 renderer server 绑定 `127.0.0.1:5173`，避免 vite 只监听 `[::1]` 导致 Electron `ERR_CONNECTION_REFUSED`。
+## 功能
 
-## 安装依赖
+| 模块 | 能力 |
+| --- | --- |
+| 专注计时 | 25 分钟专注 / 5 分钟短休 / 60 分钟长休，每 4 个番茄进入长休；开始、暂停、继续、重置、跳过 |
+| 低打扰提醒 | Web Audio 合成轻提示音，专注结束与休息结束两种音色；不弹系统通知、不抢焦点 |
+| 桌面融合 | 240×240 透明无边框置顶窗，默认不占任务栏；拖拽顶栏移动；➖ 收起为 160×160 半透明紧凑态 |
+| 专注保护 | 自动识别 DaVinci Resolve 等剪辑软件在前台时进入勿扰，提醒只保留视觉变化；也可手动勿扰 |
+| 今日统计 | 今日完成番茄数、累计专注时长，本地持久化 |
+| 护眼与久坐 | 20-20-20 护眼提醒、45 分钟久坐起身提醒，均可单独开关与调间隔 |
+| 桌面常驻 | 托盘菜单（显示 / 设置 / 重启界面 / 退出）、关闭到托盘、开机自启 |
+| 视觉主题 | 极简黑白、番茄红、森林绿、深海蓝、薰衣草、跟随系统，共 6 套；除极简外随系统明暗切换 |
+| 自动更新 | 安装版从 GitHub Releases 检查、下载并静默安装新版本；绿色版提示手动覆盖 |
+| 稳定性 | 渲染进程异常自动重建（限流 + 退避）、无响应强制恢复、托盘手动重启、时钟回拨保护、日志轮转 |
 
-```powershell
-cd D:\WorkbuddyDatas\2026-10-19-14-05-58\pomodoro_desktop_widget
-$env:ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/'
-npm install --registry=https://registry.npmmirror.com
-```
+<p align="center">
+  <img src="docs/screenshots/theme-forest.png" width="200" alt="森林绿" />
+  <img src="docs/screenshots/theme-ocean.png" width="200" alt="深海蓝" />
+  <img src="docs/screenshots/theme-lavender.png" width="200" alt="薰衣草" />
+</p>
 
-## 启动 / 类型检查
+## 下载与安装
 
-```powershell
-npm run dev         # 开发模式，弹出 240×240 挂件窗
-npm run typecheck   # tsc --noEmit（node + web 两段），应 0 error
-npm run build       # 仅构建产物到 out/（MVP 不含安装包打包）
-```
+**安装版（推荐）**
 
-## 测试与质量断言
+1. 打开 [Releases · v0.2.2](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.2.2)。
+2. 下载 `pomodoro-widget-setup-0.2.2.exe` 并安装。
+3. 安装版内置自动更新：设置 →「检查更新」，有新版本时下载并重启安装。
 
-```powershell
-node tests/timer-settlement-assert.mjs    # 计时结算、设置变更重算
-node tests/crash-recovery-assert.mjs     # 崩溃原因决策、退避、unresponsive 接线
-node tests/window-mode-resize-assert.mjs  # 窗口模式/缩放静态约束
-node tests/perf-hardening-assert.mjs      # 勿扰降频、崩溃恢复、日志轮转、CSP
-node tests/theme-assert.mjs               # 六族配色、深浅变体、设置校验
-$env:CHECK_BUILD_OUTPUT='1'; node tests/perf-hardening-assert.mjs  # 构建后校验产物 CSP
-npm run test:assert                       # 一次跑完全部 node 断言
-npm run test:e2e                          # 真实 Electron：冒烟 + 崩溃自愈专项
-npm run test:upgrade                      # 真升级回归：安装 0.2.0 → 静默升级 0.2.1（会安装/卸载本机程序）
-```
+**绿色版**
 
-## 视觉主题
+解压后直接运行，不需要安装；更新时替换整个目录即可。绿色版不接入自动更新，设置页会提示手动下载新版本覆盖。
 
-设置面板「视觉主题」提供 6 个选项，全部为低饱和毛玻璃风格：
+> 当前安装包未做代码签名，Windows SmartScreen 可能提示「未知发布者」，选择「仍要运行」即可。
 
-| 选项 | 配色族 | 明暗 |
+系统要求：Windows 10 / 11 x64。
+
+## 使用
+
+- **移动**：拖动顶栏空白处。
+- **收起**：点顶栏 `➖`，窗口缩到 160×160 并变为 62% 不透明度；点紧凑窗任意位置恢复。
+- **设置**：点 `⚙`，可调专注/短休/长休时长、长休间隔、音量与静音、护眼/久坐开关、开机自启、勿扰、主题，以及检查更新。
+- **退出**：点 `✕` 退出；点窗口关闭按钮则收进托盘继续计时。
+- **托盘**：右键托盘图标可显示挂件、打开设置、重启界面或退出。
+
+## 主题
+
+设置面板提供 6 个选项，全部为低饱和毛玻璃风格：
+
+| 选项 | 标识 | 明暗 |
 | --- | --- | --- |
-| 极简黑白 | `minimal` | 锁定深色经典款 |
-| 番茄红 | `tomato` | 随系统明暗（深 / 浅） |
-| 森林绿 | `forest` | 随系统明暗（深 / 浅） |
-| 深海蓝 | `ocean` | 随系统明暗（深 / 浅） |
-| 薰衣草 | `lavender` | 随系统明暗（深 / 浅） |
+| 极简黑白 | `minimal` | 锁定深色 |
+| 番茄红 | `tomato` | 随系统 |
+| 森林绿 | `forest` | 随系统 |
+| 深海蓝 | `ocean` | 随系统 |
+| 薰衣草 | `lavender` | 随系统 |
 | 跟随系统 | `system` | 极简风格 + 系统明暗 |
 
 新增主题只需：在 `src/shared/types.ts` 的 `THEME_NAMES` 加名字 → `src/renderer/src/styles/tokens.css` 加深/浅两组变量 → `SettingsPanel.tsx` 的 `THEME_OPTIONS` 加标签。
 
-第二批性能与健壮性要点：
+## 性能与可靠性
 
-- 勿扰前台探测按需调度：运行 10s / 空闲 60s / 隐藏 120s / 降级 300s；窗口 show/restore 后立即刷新。
-- 主进程 tick 1000ms，渲染层用 `requestAnimationFrame` 按 `endsAt` 本地补间，每秒快照校正且不倒退。
-- 渲染进程异常退出后 60s 内最多重建 3 次；重建互斥，重建期间 `window-all-closed` 不误退出。
-- `sendToRenderer` 跳过已崩溃的 webContents；生产构建注入 CSP，开发模式不注入。
-- 崩溃重建连续限流放弃后，托盘右键「重启界面」可手动恢复并清空限流预算。
-- 主进程用上一 tick 快照检测 `Date.now()` 回拨（阈值 1s），回拨时按回拨前剩余重锚 `endsAt`，计时不会倒走。
-- 日志超过 1MB 轮转，保留 2 份归档。
+- 主进程 1 秒 tick，渲染层按 1 秒快照推进圆环，不再跑 60fps rAF；窗口隐藏时停止补间。
+- 勿扰探测按需调度：运行 30 秒 / 空闲 120 秒 / 隐藏 300 秒 / 检测失败 600 秒；窗口隐藏或最小化时暂停探测，提醒发送前即时探测一次（最多等 600ms）。
+- 本机 5 秒 CPU 采样（5 进程合计）：运行态单核占用约 24.7% → **7.5%**，暂停态接近 0%（仅代表本机测量）。
+- 渲染进程异常退出后 60 秒内最多重建 3 次，重建互斥并带 300/800/1500ms 退避；连续失败后托盘「重启界面」可手动恢复。
+- 渲染进程无响应先给 5 秒宽限，仍无响应则强制重建。
+- 主进程检测 `Date.now()` 回拨（阈值 1 秒），按回拨前剩余时间重锚，计时不会倒走。
+- 日志超过 1MB 轮转并保留 2 份；生产构建注入 CSP。
 
-崩溃自愈增强（P0）：
+## 更新日志
 
-- 渲染进程 `unresponsive` 先给 5s 宽限（E2E 可缩短），仍无响应则 `forcefullyCrashRenderer()`，走统一重建。
-- 重建退避 300ms → 800ms → 1500ms；重建失败自动重试一次，仍失败则保留托盘「重启界面」手动入口。
-- `launch-failed` / `integrity-failure` 同原因只重试一次，避免损坏的包反复重建；`killed` / `clean-exit` 不重建。
-- 主进程 `uncaughtException` 写日志并弹窗退出，`unhandledRejection` 留痕，避免后台无窗口驻留。
+### v0.2.2
 
-## 测试钩子（QA 快速验证到点流转）
+- 性能：计时圆环从 60fps rAF 改为 1fps 快照，去掉逐帧 `stroke-dashoffset` 过渡；隐藏窗口停止补间。
+- 性能：勿扰前台探测降频（运行 10s → 30s），隐藏/最小化暂停；提醒前即时探测，静音判断更准。
+- 发布：补齐项目介绍、功能截图、版本更新日志与 GitHub Releases 发布流程。
+- 修复：自动更新源改为 GitHub Releases，安装版可直接从仓库 Release 升级。
 
-通过环境变量覆盖阶段时长（毫秒），未设置时按默认 25 分钟 / 60 分钟：
+### v0.2.1
 
-| 环境变量 | 作用 | 默认 |
-| --- | --- | --- |
-| `POMODORO_FOCUS_MS` | 覆盖「专注」阶段时长 | settings.focusMinutes（25 分） |
-| `POMODORO_BREAK_MS` | 覆盖「短休/长休」阶段时长 | settings.shortBreakMinutes（60 分） |
+- 崩溃自愈：渲染进程重建限流（60 秒 3 次）、退避重试、`unresponsive` 强制恢复、托盘「重启界面」。
+- 自动更新：NSIS 安装包 + `latest.yml` + 应用内检查/下载/重启安装；绿色版降级为手动覆盖提示。
+- 时钟回拨保护：主进程用上一 tick 快照检测系统时间回退并重锚。
+- 新增森林绿、深海蓝、薰衣草三套主题，共 6 套。
 
-PowerShell 示例（把专注与休息都缩到 8 秒）：
+### v0.2.0
+
+- 完整桌面体验：托盘菜单、开机自启、关闭到托盘、今日统计、紧凑模式、护眼/久坐提醒。
+- 勿扰模式：检测剪辑软件前台自动静音提醒，也可手动开启。
+- 稳定性：单实例锁、多显示器位置恢复、空闲态改时长即时生效、跳过按实际专注时长结算。
+
+### v0.1.0
+
+- 首个可运行版本：透明置顶挂件、timestamp 驱动的番茄计时、圆环倒计时、轻提示音、设置持久化。
+
+## 开发
+
+技术栈：Electron 31、electron-vite 2、React 18、TypeScript 5、electron-updater、Playwright（e2e）。无 UI 框架，样式使用 CSS 设计 token。
 
 ```powershell
-Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue   # 见上文环境注意事项
+cd pomodoro_desktop_widget
+$env:ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/'
+npm install --registry=https://registry.npmmirror.com
+
+npm run dev         # 开发模式
+npm run typecheck   # 主进程 + 渲染层类型检查
+npm run test:assert # 计时/崩溃/性能/收纳/窗口/主题/更新断言
+npm run test:e2e    # 真实 Electron 冒烟 + 崩溃自愈
+npm run release:win # 构建 + NSIS 安装包 + latest.yml
+```
+
+### 目录结构
+
+```text
+pomodoro_desktop_widget/
+├── src/
+│   ├── shared/    types · constants · format · timerMath · dndPolicy · crashPolicy · logPolicy
+│   ├── main/      index · bootstrap · window · timer · tray · dnd · updater · settings · store · logger · autostart · ipc
+│   ├── preload/   index（window.pomodoro 白名单 API）
+│   └── renderer/src/
+│       ├── hooks/       useTimer · useSettings · useTheme
+│       ├── components/  TitleBar · TimerRing · ControlBar · SettingsPanel
+│       └── styles/      tokens.css · global.css
+├── tests/         assert 脚本 + e2e（smoke / crash-recovery / real-upgrade）
+├── scripts/       release · serve-updates · capture-screenshots
+└── docs/screenshots/
+```
+
+### 测试钩子
+
+通过环境变量覆盖阶段时长（毫秒），便于快速验证到点流转：
+
+```powershell
 $env:POMODORO_FOCUS_MS = '8000'
 $env:POMODORO_BREAK_MS = '8000'
 npm run dev
 ```
 
-验证步骤：
+`POMODORO_USER_DATA_DIR` 可重定向数据目录（e2e 使用）；`POMODORO_E2E=1` 跳过开机自启与勿扰探测。
 
-1. 点击「开始」→ 圆环开始递减、文案「专注中」。
-2. 等 8 秒到点 → 听到轻提示音（单音），圆环变绿、自动进入休息倒计时。
-3. 再等 8 秒休息到点 → 又一声轻提示（双音），回到「准备开始」，按钮变为「开始下一个番茄」。
-4. 点「开始下一个番茄」→ 进入下一个专注。
+### 发布
 
-（用完请关闭该终端或 `Remove-Item Env:POMODORO_FOCUS_MS`，避免影响正常时长。）
+1. 更新 `package.json` 版本号。
+2. `npm run release:win`，产物在 `release/`：`pomodoro-widget-setup-<version>.exe`、`latest.yml`、`.blockmap`。
+3. 在 GitHub 创建 `v<version>` Release，上传上述三个文件。
+4. 安装版自动更新读取 Release 中的 `latest.yml`；本地验证可用 `npm run serve:updates` + `UPDATE_URL=http://127.0.0.1:8787`。
 
-## 使用说明
+## 数据与隐私
 
-- 顶栏可拖动挂件；「✕」退出应用（MVP 关窗即退出）。
-- 「➖」最小化到 160×160 紧凑态：240↔160 尺寸与不透明度做 160ms 补间，收起后整窗不透明度降到 62%；点击紧凑窗恢复 240×240。
-- 运行中：「暂停」「跳过」；暂停后：「继续」「重置」。
-- 提示音音量/静音暂经设置默认值（volume=60、muted=false），无设置面板 UI。
+- 设置与统计保存在 `%APPDATA%/pomodoro_desktop_widget/pomodoro-data.json`，原子写入，损坏时回退默认值。
+- 日志在 `%APPDATA%/pomodoro_desktop_widget/logs/app.log`，仅本地，不上传。
+- 应用不收集任何遥测；自动更新只访问 GitHub Releases。
 
-## MVP 范围与已知未含功能
+## 已知限制
 
-**已实现**：透明置顶挂件窗、timestamp 驱动番茄计时（开始/暂停/继续/重置/跳过、到点自动流转）、圆环+mm:ss 倒计时、到点轻提示音（Web Audio 合成，focusEnd/breakEnd 两种音色）+ 圆环变色/文案切换、设置持久化（`userData/pomodoro-data.json` 原子读写）、测试钩子。
+- 仅支持 Windows x64；未做代码签名。
+- 自动更新依赖 GitHub 可访问；国内网络可能需要代理。
+- 今日统计仅当日，暂无历史图表/导出。
+- 暂无全局快捷键、任务命名、白噪音。
+- 勿扰自动检测当前匹配 DaVinci Resolve 等剪辑软件前台进程，其他软件可手动勿扰。
 
-**MVP 未含（后续任务 T04/T07/T08 全量）**：
+## 路线图
 
-- 托盘图标与右键菜单（显示/设置/退出）
-- 开机自启（Settings 字段 `autoStartAtLogin` 已预留）
-- 关窗最小化到托盘（常驻不退出）
-- 今日统计（番茄数 / 累计专注时长展示与落盘）
-- 设置面板 UI（时长微调 / 音量滑杆 / 静音 / 自启开关）
-- 紧凑模式、主题切换 UI、护眼小贴士
-- electron-builder 打包为 Windows NSIS 安装包
-
-## 目录结构（MVP 子集）
-
-```
-pomodoro_desktop_widget/
-├── package.json / electron.vite.config.ts / tsconfig*.json / index.html
-└── src/
-    ├── shared/    types.ts · constants.ts · format.ts
-    ├── main/      index.ts · window.ts · timer.ts · ipc.ts · settings.ts · store.ts · logger.ts
-    ├── preload/   index.ts（window.pomodoro 白名单 API）
-    └── renderer/src/
-        ├── main.tsx · App.tsx · audio.ts · env.d.ts
-        ├── hooks/     useTimer.ts · useSettings.ts
-        ├── components/ TitleBar.tsx · TimerRing.tsx · ControlBar.tsx
-        └── styles/    tokens.css · global.css
-```
-
-## 数据与日志
-
-- 持久化：`%APPDATA%/pomodoro_desktop_widget/pomodoro-data.json`（损坏自动回退默认值）
-- 日志：`%APPDATA%/pomodoro_desktop_widget/logs/app.log`
+- 周/月统计视图与 CSV 导出
+- 全局快捷键、任务标签
+- 白噪音与更丰富的提示音
+- 可选的开机启动到托盘 / 静默更新

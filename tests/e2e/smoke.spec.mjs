@@ -61,9 +61,10 @@ async function main() {
   // 开始 → 暂停 → 重置
   await win.getByRole('button', { name: '开始', exact: true }).click();
   await win.getByRole('button', { name: '暂停', exact: true }).waitFor({ timeout: 5_000 });
-  await win.waitForTimeout(1_300);
+  // 主进程 1s tick + 渲染层 1s 快照推进，留出一次 tick 与 IPC 的余量
+  await win.waitForTimeout(2_300);
   const runningTime = (await win.locator('.timer-ring__time').innerText()).trim();
-  assert.notEqual(runningTime, initial, '开始 1.3s 后时间应递减');
+  assert.notEqual(runningTime, initial, '开始 2.3s 后时间应递减');
   console.log(`  ✓ 开始后时间递减到 ${runningTime}`);
 
   await win.getByRole('button', { name: '暂停', exact: true }).click();

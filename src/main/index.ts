@@ -108,15 +108,30 @@ function enqueueRemind(kind: RemindKind): void {
   }
   mergeTimer = setTimeout(() => {
     mergeTimer = null;
-    const kinds = dedupe(pendingKinds);
-    pendingKinds = [];
-    const primary =
-      REMIND_PRIORITY.find((candidate) => kinds.includes(candidate)) ?? kinds[0] ?? 'eyeCare';
-    const quiet = dndService?.isQuiet() ?? false;
-    const event: RemindEvent = { kind: primary, kinds, quiet };
-    sendToRenderer(IpcChannels.REMIND, event);
-    logger.info(`remind sent kind=${primary} kinds=[${kinds.join(',')}] quiet=${quiet}`);
+    void flushReminds();
   }, REMIND_MERGE_MS);
+}
+
+/**
+ * 合并窗口结束后发送提醒。发送前即时探测一次前台（最多等 600ms），
+ * 避免缓存过期导致该静音时没静音；E2E 下跳过 PowerShell。
+ */
+async function flushReminds(): Promise<void> {
+  const kinds = dedupe(pendingKinds);
+  pendingKinds = [];
+  const primary =
+    REMIND_PRIORITY.find((candidate) => kinds.includes(candidate)) ?? kinds[0] ?? 'eyeCare';
+  const service = dndService;
+  if (service !== null && !E2E) {
+    await Promise.race([
+      service.detectNow(),
+      new Promise<void>((resolve) => setTimeout(resolve, 600)),
+    ]);
+  }
+  const quiet = service?.isQuiet() ?? false;
+  const event: RemindEvent = { kind: primary, kinds, quiet };
+  sendToRenderer(IpcChannels.REMIND, event);
+  logger.info(`remind sent kind=${primary} kinds=[${kinds.join(',')}] quiet=${quiet}`);
 }
 
 function dedupe(kinds: RemindKind[]): RemindKind[] {
@@ -165,16 +180,21 @@ function currentDndProbeDelay(): number {
 
 /**
  * 按策略安排下一次前台探测，探测完成后再计算间隔（自适应降频）。
- * 相比旧的 10s 常驻 setInterval：空闲时 60s、隐藏时 120s、降级后 300s，
- * 运行中仍保持 10s 以保证剪辑软件切前台时徽标及时点亮。
+ * 隐藏/最小化时由 bindWindow 直接 stopDndProbe()，不再后台轮询；
+ * 提醒发送前另有 flushReminds() 即时探测兜底。
  */
+function stopDndProbe(): void {
+  if (dndProbeTimer !== null) {
+    clearTimeout(dndProbeTimer);
+    dndProbeTimer = null;
+  }
+}
+
 function scheduleDndProbe(delayMs: number = currentDndProbeDelay()): void {
   if (E2E) {
     return;
   }
-  if (dndProbeTimer !== null) {
-    clearTimeout(dndProbeTimer);
-  }
+  stopDndProbe();
   dndProbeTimer = setTimeout(() => {
     dndProbeTimer = null;
     const service = dndService;
@@ -209,9 +229,9 @@ function bindWindow(win: BrowserWindow): void {
   });
   win.on('show', () => scheduleDndProbe(0));
   win.on('restore', () => scheduleDndProbe(0));
-  // 隐藏/最小化后立即按新可见性重排（隐藏态 120s），避免继续保持 10s 轮询
-  win.on('hide', () => scheduleDndProbe());
-  win.on('minimize', () => scheduleDndProbe());
+  // 隐藏/最小化时完全暂停探测；提醒发送前会即时探测一次，显示后立即恢复
+  win.on('hide', stopDndProbe);
+  win.on('minimize', stopDndProbe);
 
   // 渲染进程卡死：先给宽限，仍无响应则强制崩溃，交给 render-process-gone 统一重建。
   // 只处理一次，避免同一窗口反复触发；responsive/closed 时清理定时器。
@@ -385,10 +405,7 @@ function handleUndock(): DockState {
 
 function requestQuit(): void {
   markQuitting();
-  if (dndProbeTimer !== null) {
-    clearTimeout(dndProbeTimer);
-    dndProbeTimer = null;
-  }
+  stopDndProbe();
   if (recreateTimer !== null) {
     clearTimeout(recreateTimer);
     recreateTimer = null;

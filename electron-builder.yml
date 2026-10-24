@@ -1,7 +1,6 @@
-# electron-builder 打包配置（完工版）
-# 产物：release/番茄钟挂件 Setup 0.2.0.exe（Windows NSIS x64）
-# 执行：node node_modules/electron-builder/bin/electron-builder.js --win
-#   （或 npm run dist:win；本机 npm 派生故障时用前者）
+# electron-builder 打包配置
+# 产物：release/pomodoro-widget-setup-<version>.exe（Windows NSIS x64）
+# 执行：npm run release:win（构建 + 打包 + 校验 latest.yml）
 
 appId: com.gao.pomodoro-widget
 productName: 番茄钟挂件
@@ -15,11 +14,13 @@ files:
 asar: true
 # 无原生依赖（纯 JS react），跳过 native rebuild
 npmRebuild: false
-# 自动更新源：打包时写入 resources/app-update.yml；运行时可用 UPDATE_URL 覆盖。
-# 生产环境替换成自己的静态文件服务器（需能访问 latest.yml 与安装包）。
+# 自动更新源：打包时写入 resources/app-update.yml，默认走 GitHub Releases。
+# 发布时把 latest.yml、安装包、blockmap 上传到对应 tag 的 Release；
+# 本地验证仍可用 UPDATE_URL 覆盖为 http://127.0.0.1:8787。
 publish:
-  provider: generic
-  url: https://updates.example.com/pomodoro/
+  provider: github
+  owner: agkp4ever-creator
+  repo: kp-dsh
 win:
   target:
     - target: nsis
