@@ -19,6 +19,9 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+/** 工作区可能是 CRLF（git core.autocrlf），变异原文统一按 LF 比对 */
+const normalize = (text) => text.replace(/\r\n/g, '\n');
+
 const FILES = [
   ['src/shared/constants.ts', 'src/shared/constants.ts'],
   ['src/shared/dock.ts', 'src/shared/dock.ts'],
@@ -131,14 +134,14 @@ const rows = [];
 for (const m of mutations) {
   const dir = sandbox();
   const path = join(dir, m.file);
-  const original = readFileSync(path, 'utf-8');
-  if (!original.includes(m.from)) {
+  const original = normalize(readFileSync(path, 'utf-8'));
+  if (!original.includes(normalize(m.from))) {
     console.error(`  [被测变异失效] ${m.id} — 原文未命中 ${m.file}`);
     missed += 1;
     rmSync(dir, { recursive: true, force: true });
     continue;
   }
-  writeFileSync(path, original.replace(m.from, m.to), 'utf-8');
+  writeFileSync(path, original.replace(normalize(m.from), normalize(m.to)), 'utf-8');
   const res = run(dir);
   const killed = res.code === 1 && res.fails.length > 0;
   rows.push({ id: m.id, killed, fails: res.fails, pass: res.passCount });

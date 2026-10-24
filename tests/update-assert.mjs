@@ -56,6 +56,10 @@ check(
   'updater 绿色版无 app-update.yml 时禁用',
   updater.includes('app-update.yml') && updater.includes('绿色版请手动下载新版本覆盖')
 );
+check(
+  'updater 绿色版手动检查也短路',
+  (updater.match(/isPortableBuild\(\)/g) ?? []).length >= 2
+);
 check('updater 延迟检查常量', constants.includes('UPDATE_CHECK_DELAY_MS'));
 check('index 组装 UpdaterService', index.includes('new UpdaterService'));
 check('index 托盘检查更新接线', index.includes('checkForUpdatesFromTray') && index.includes('checkForUpdates:'));

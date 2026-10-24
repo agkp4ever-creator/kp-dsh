@@ -45,7 +45,7 @@ export class UpdaterService {
     }
 
     // 绿色版没有 electron-builder 写入的 app-update.yml：不发起网络检查，提示手动覆盖
-    if (!existsSync(join(process.resourcesPath, 'app-update.yml'))) {
+    if (this.isPortableBuild()) {
       this.setStatus({ state: 'idle', message: '绿色版请手动下载新版本覆盖' });
       logger.info('app-update.yml missing, updater disabled (portable build)');
       return;
@@ -104,6 +104,11 @@ export class UpdaterService {
       this.setStatus({ state: 'idle', message: '开发模式不检查更新' });
       return this.getStatus();
     }
+    // 绿色版没有 app-update.yml，手动检查也不能调用 autoUpdater（否则 ENOENT）
+    if (this.isPortableBuild()) {
+      this.setStatus({ state: 'idle', message: '绿色版请手动下载新版本覆盖' });
+      return this.getStatus();
+    }
     if (this.status.state === 'checking' || this.status.state === 'downloading') {
       return this.getStatus();
     }
@@ -141,6 +146,11 @@ export class UpdaterService {
     }
     logger.info('quit and install update (silent)');
     autoUpdater.quitAndInstall(true, true);
+  }
+
+  /** 绿色版 = 已打包但 resources 下没有 electron-builder 生成的 app-update.yml */
+  private isPortableBuild(): boolean {
+    return app.isPackaged && !existsSync(join(process.resourcesPath, 'app-update.yml'));
   }
 
   private setStatus(patch: Partial<UpdateStatus>): void {
