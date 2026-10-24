@@ -2,7 +2,7 @@
 
 > 不打扰剪辑节奏的常驻桌面番茄钟：240×240 透明置顶小窗，不抢焦点、不占任务栏，到点只轻提示。
 
-Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.2.2
+Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.0
 
 <p align="center">
   <img src="docs/screenshots/main.png" width="240" alt="主界面" />
