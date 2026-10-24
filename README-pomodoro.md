@@ -2,7 +2,7 @@
 
 > 不打扰剪辑节奏的常驻桌面番茄钟：240×240 透明置顶小窗，不抢焦点、不占任务栏，到点只轻提示。
 
-Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.0
+Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.1
 
 <p align="center">
   <img src="docs/screenshots/main.png" width="240" alt="主界面" />
@@ -41,8 +41,8 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.0
 
 **安装版（推荐）**
 
-1. 打开 [Releases · v0.3.0](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.0)。
-2. 下载 `pomodoro-widget-setup-0.3.0.exe` 并安装。
+1. 打开 [Releases · v0.3.1](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.1)。
+2. 下载 `pomodoro-widget-setup-0.3.1.exe` 并安装。
 3. 安装版内置自动更新：设置 →「检查更新」，有新版本时下载并重启安装。
 
 **绿色版**
@@ -87,6 +87,11 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.0
 - 日志超过 1MB 轮转并保留 2 份；生产构建注入 CSP。
 
 ## 更新日志
+
+### v0.3.1
+
+- 修复：绿色版手动点击「检查更新」不再读取缺失的 `app-update.yml`，改为提示「绿色版请手动下载新版本覆盖」。
+- 测试：`update-assert` 补充绿色版手动检查短路；修复窗口变异测试的 CRLF 匹配问题，8/8 变异全检出。
 
 ### v0.3.0
 

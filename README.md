@@ -10,4 +10,4 @@
 Windows 桌面番茄钟挂件：240×240 透明置顶、不抢焦点、6 套主题、自动更新、崩溃自愈。
 
 - [项目介绍与截图](./README-pomodoro.md)
-- [下载 v0.3.0](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.0)
+- [下载 v0.3.1](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.1)
