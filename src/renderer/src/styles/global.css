@@ -1,0 +1,616 @@
+/**
+ * 全局布局：毛玻璃挂件壳、拖动区、细圆环、按钮、统计条、设置面板与动效
+ * （≤0.6s，仅透明度/颜色/描边）。颜色一律走 tokens.css 变量（支持深浅色变体）。
+ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 壳 ---------- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--bg-glass);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.app-shell--compact {
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 12px 10px;
+  min-height: 0;
+}
+
+.app-body--compact {
+  justify-content: center;
+  padding: 0;
+}
+
+/* ---------- 顶栏（拖动区） ---------- */
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--titlebar-h);
+  padding: 0 8px;
+  -webkit-app-region: drag;
+}
+
+.titlebar__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: background var(--motion-fast) ease;
+}
+
+.titlebar__dot--focus {
+  background: var(--ring-focus);
+}
+
+.titlebar__dot--shortBreak,
+.titlebar__dot--longBreak {
+  background: var(--ring-break);
+}
+
+.titlebar__dot--running {
+  animation: dot-breathe var(--motion) ease-in-out infinite;
+}
+
+.titlebar__dot--paused {
+  background: var(--text-secondary);
+  animation: none;
+}
+
+.titlebar__title {
+  flex: 1;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  transition: color var(--motion-fast) ease;
+}
+
+/* 勿扰角标（P1-6） */
+.titlebar__dnd {
+  padding: 1px 6px;
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  transition: opacity var(--motion-fast) ease;
+}
+
+.titlebar__icon-btn {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 22px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+}
+
+.titlebar__icon-btn:hover {
+  background: var(--btn-bg-hover);
+  color: var(--text-primary);
+}
+
+/* ---------- 圆环 ---------- */
+.timer-ring {
+  position: relative;
+  width: 126px;
+  height: 126px;
+  flex: 0 0 auto;
+}
+
+.timer-ring__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.timer-ring__track {
+  fill: none;
+  stroke: var(--ring-track);
+  stroke-width: 2.5;
+}
+
+.timer-ring__progress {
+  fill: none;
+  stroke: var(--ring-focus);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke var(--motion) ease, stroke-dashoffset var(--motion-fast) linear;
+}
+
+.timer-ring--break .timer-ring__progress {
+  stroke: var(--ring-break);
+}
+
+.timer-ring--reminding .timer-ring__progress {
+  animation: ring-flash var(--motion) ease;
+}
+
+.timer-ring__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.timer-ring__time {
+  font-size: 22px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  transition: color var(--motion-fast) ease;
+}
+
+.timer-ring__caption {
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  transition: color var(--motion-fast) ease;
+}
+
+/* ---------- 操作区 ---------- */
+.control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  -webkit-app-region: no-drag;
+}
+
+.btn {
+  min-width: 64px;
+  height: 28px;
+  padding: 0 12px;
+  border: 1px solid var(--btn-border);
+  border-radius: 14px;
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+  transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease,
+    color var(--motion-fast) ease;
+}
+
+.btn:hover {
+  background: var(--btn-bg-hover);
+  border-color: var(--btn-border-hover);
+}
+
+.btn:active {
+  background: var(--btn-bg-active);
+}
+
+.btn--primary {
+  background: var(--btn-primary-bg);
+  border-color: transparent;
+  color: var(--btn-primary-fg);
+  font-weight: 600;
+}
+
+.btn--primary:hover {
+  background: var(--btn-primary-bg-hover);
+}
+
+.btn--primary:active {
+  background: var(--btn-primary-bg-active);
+}
+
+.btn--ghost {
+  background: transparent;
+  border-color: var(--btn-border);
+  color: var(--text-secondary);
+}
+
+.btn--ghost:hover {
+  color: var(--text-primary);
+  background: var(--btn-bg);
+}
+
+.btn--wide {
+  min-width: 148px;
+}
+
+/* ---------- 统计条（P0-7 + P1-4 周期指示） ---------- */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  -webkit-app-region: no-drag;
+}
+
+.stats-bar__label {
+  color: var(--text-secondary);
+}
+
+.stats-bar__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stats-bar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--dot-outline);
+  transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+}
+
+.stats-bar__dot--filled {
+  background: var(--text-primary);
+  border-color: var(--text-primary);
+}
+
+.stats-bar__count {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-bar__divider {
+  width: 1px;
+  height: 10px;
+  background: var(--divider);
+}
+
+.stats-bar__focus {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 长休分档：本组第 N/4 个番茄（P1-4） */
+.stats-bar__cycle {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 护眼小贴士 / 健康提醒横幅（P1-1/P1-2） ---------- */
+.tip-line {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  opacity: 0.9;
+  transition: opacity var(--motion-fast) ease;
+  -webkit-app-region: no-drag;
+}
+
+.health-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 22px;
+  padding: 3px 10px;
+  border: 1px solid var(--btn-border);
+  border-radius: 11px;
+  background: var(--surface-soft);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  opacity: 1;
+  transition: opacity var(--motion-fast) ease, background var(--motion-fast) ease;
+  -webkit-app-region: no-drag;
+}
+
+.health-banner--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- 设置面板（P0-5 + P1 扩展） ---------- */
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  padding: 4px 14px 14px;
+  overflow-y: auto;
+  -webkit-app-region: no-drag;
+}
+
+.settings-panel__title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+}
+
+.settings-panel__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.settings-panel__done {
+  margin-top: auto;
+  align-self: center;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 26px;
+}
+
+.setting-row__label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.setting-row__value {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 时长微调 */
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.stepper__btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--btn-border);
+  border-radius: 8px;
+  background: var(--btn-bg);
+  color: var(--text-primary);
+  font-size: 13px;
+  line-height: 22px;
+  cursor: pointer;
+  transition: background var(--motion-fast) ease;
+}
+
+.stepper__btn:hover {
+  background: var(--btn-bg-hover);
+}
+
+.stepper__value {
+  min-width: 42px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 开关 */
+.toggle {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--toggle-off);
+  cursor: pointer;
+  transition: background var(--motion-fast) ease;
+}
+
+.toggle--on {
+  background: var(--ring-break);
+}
+
+.toggle__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: left var(--motion-fast) ease;
+}
+
+.toggle--on .toggle__knob {
+  left: 18px;
+}
+
+/* 音量滑杆 */
+.volume-slider {
+  width: 100%;
+  height: 20px;
+  accent-color: var(--ring-focus);
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+/* 自动更新状态与操作 */
+.update-status {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  word-break: break-word;
+}
+
+.update-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.update-actions .btn {
+  height: 24px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+/* 主题选择：3 列 × 2 行，避免 6 个选项把 320px 面板撑破 */
+.theme-picker {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: end;
+  gap: 6px;
+}
+
+.theme-chip {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--btn-border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  cursor: pointer;
+  transition: background var(--motion-fast) ease, color var(--motion-fast) ease,
+    border-color var(--motion-fast) ease;
+}
+
+.theme-chip:hover {
+  color: var(--text-primary);
+  border-color: var(--btn-border-hover);
+}
+
+.theme-chip--active {
+  background: var(--btn-primary-bg);
+  border-color: transparent;
+  color: var(--btn-primary-fg);
+  font-weight: 600;
+}
+
+/* ---------- 收纳把手（P1-7 方案 B）：窗口此时仅 10×160 ---------- */
+.dock-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 10px 0;
+  /* 低饱和暗色毛玻璃：贴在屏边不抢视线 */
+  background: rgba(20, 20, 20, 0.72);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+  transition: background var(--motion-fast) ease;
+  -webkit-app-region: no-drag;
+}
+
+.dock-handle:hover {
+  background: rgba(34, 34, 34, 0.86);
+}
+
+.dock-handle:active {
+  background: rgba(48, 48, 48, 0.9);
+}
+
+/* 外侧贴屏边不描圆角，内侧留圆角：像从屏幕边缘长出的细条 */
+.dock-handle--left {
+  border-radius: 0 5px 5px 0;
+}
+
+.dock-handle--right {
+  border-radius: 5px 0 0 5px;
+}
+
+/* 剩余时间进度线：自下而上，高度 = remainingMs/totalMs */
+.dock-handle__track {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 2px;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.dock-handle__progress {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.82);
+  transition: height var(--motion-fast) linear, background var(--motion-fast) ease;
+}
+
+.dock-handle--break .dock-handle__progress {
+  background: var(--ring-break);
+}
+
+/* ---------- 动效（仅透明度/颜色/描边，禁止位移弹跳） ---------- */
+@keyframes dot-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes ring-flash {
+  0% {
+    stroke-width: 2.5;
+    opacity: 1;
+  }
+  40% {
+    stroke-width: 5;
+    opacity: 0.75;
+  }
+  100% {
+    stroke-width: 2.5;
+    opacity: 1;
+  }
+}

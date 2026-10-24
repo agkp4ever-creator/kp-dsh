@@ -1,0 +1,1307 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>番茄钟桌面挂件 · MVP 预览模型</title>
+    <style>
+      :root {
+        --bg-glass: rgba(20, 20, 20, 0.8);
+        --text-primary: #f5f5f5;
+        --text-secondary: #8a8a8a;
+        --ring-track: rgba(255, 255, 255, 0.3);
+        --ring-focus: #ffffff;
+        --ring-break: #5fbf8c;
+        --accent-tomato: #e8503a;
+        --radius: 18px;
+        --motion: 0.6s;
+        --motion-fast: 0.3s;
+        --font-ui: 'Segoe UI', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #1c1c1e;
+        background-image: radial-gradient(ellipse at 50% 0%, #2a2a2e 0%, #1c1c1e 60%);
+        color: var(--text-primary);
+        font-family: var(--font-ui);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 32px 16px 48px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page-head {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .page-head h1 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+      }
+
+      .page-head p {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+      }
+
+      /* ---------- 240×240 挂件（对照 PRD §5.2/5.3） ---------- */
+      .widget {
+        width: 240px;
+        height: 240px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+        transition: background var(--motion) ease;
+      }
+
+      .widget--break {
+        background: rgba(20, 26, 22, 0.82);
+      }
+
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 28px;
+        padding: 0 10px;
+      }
+
+      .titlebar__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--ring-focus);
+        transition: background var(--motion-fast) ease;
+      }
+
+      .widget--break .titlebar__dot {
+        background: var(--ring-break);
+      }
+
+      .titlebar__dot--running {
+        animation: dot-breathe var(--motion) ease-in-out infinite;
+      }
+
+      .titlebar__title {
+        flex: 1;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        color: var(--text-secondary);
+        transition: color var(--motion-fast) ease;
+      }
+
+      .app-body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 12px 10px;
+      }
+
+      /* ---------- 圆环 ---------- */
+      .timer-ring {
+        position: relative;
+        width: 126px;
+        height: 126px;
+      }
+
+      .timer-ring__svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .timer-ring__track {
+        fill: none;
+        stroke: var(--ring-track);
+        stroke-width: 2.5;
+      }
+
+      .timer-ring__progress {
+        fill: none;
+        stroke: var(--ring-focus);
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke var(--motion) ease, stroke-dashoffset var(--motion-fast) linear;
+      }
+
+      .widget--break .timer-ring__progress {
+        stroke: var(--ring-break);
+      }
+
+      .timer-ring--reminding .timer-ring__progress {
+        animation: ring-flash var(--motion) ease;
+      }
+
+      .timer-ring__content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+      }
+
+      .timer-ring__time {
+        font-size: 22px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.04em;
+        color: var(--text-primary);
+      }
+
+      .timer-ring__caption {
+        font-size: 11px;
+        color: var(--text-secondary);
+        letter-spacing: 0.06em;
+      }
+
+      /* ---------- 操作按钮 ---------- */
+      .control-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn {
+        min-width: 64px;
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-primary);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease,
+          color var(--motion-fast) ease;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+
+      .btn:active {
+        background: rgba(255, 255, 255, 0.24);
+      }
+
+      .btn--primary {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: transparent;
+        color: #141414;
+        font-weight: 600;
+      }
+
+      .btn--primary:hover {
+        background: #ffffff;
+      }
+
+      .btn--ghost {
+        background: transparent;
+        border-color: rgba(255, 255, 255, 0.14);
+        color: var(--text-secondary);
+      }
+
+      .btn--ghost:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .btn--wide {
+        min-width: 148px;
+      }
+
+      /* ---------- 统计 / 小贴士 ---------- */
+      .stats-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        color: var(--text-secondary);
+      }
+
+      .stats-bar__dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .stats-bar__dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1px solid var(--ring-track);
+        transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+      }
+
+      .stats-bar__dot--filled {
+        background: var(--text-primary);
+        border-color: var(--text-primary);
+      }
+
+      .stats-bar__divider {
+        width: 1px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .tip-line {
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        opacity: 0.9;
+      }
+
+      /* ---------- 演示控制面板（预览页专用） ---------- */
+      .demo-panel {
+        width: 320px;
+        margin-top: 28px;
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .demo-panel h2 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+
+      .demo-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 32px;
+      }
+
+      .demo-row + .demo-row {
+        margin-top: 8px;
+      }
+
+      .demo-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .demo-value {
+        font-size: 12px;
+        color: var(--text-primary);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .toggle {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.18);
+        cursor: pointer;
+        transition: background var(--motion-fast) ease;
+      }
+
+      .toggle--on {
+        background: var(--ring-break);
+      }
+
+      .toggle__knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffffff;
+        transition: left var(--motion-fast) ease;
+      }
+
+      .toggle--on .toggle__knob {
+        left: 18px;
+      }
+
+      .demo-hint {
+        margin-top: 14px;
+        font-size: 11px;
+        line-height: 1.8;
+        color: var(--text-secondary);
+      }
+
+      .demo-hint strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      .demo-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      /* ---------- 勿扰角标 / 健康提醒横幅（P1-1/P1-2/P1-6） ---------- */
+      .titlebar__dnd {
+        padding: 1px 6px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+      }
+
+      .health-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 22px;
+        padding: 3px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        color: var(--text-primary);
+        opacity: 1;
+        transition: opacity var(--motion-fast) ease;
+      }
+
+      .health-banner--hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .stats-bar__cycle {
+        color: var(--text-primary);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---------- 主题变体（P1-3：双主题 + 浅色变体） ---------- */
+      .theme-picker {
+        display: inline-flex;
+        gap: 6px;
+      }
+
+      .theme-chip {
+        height: 24px;
+        padding: 0 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font-ui);
+        font-size: 11px;
+        cursor: pointer;
+        transition: background var(--motion-fast) ease, color var(--motion-fast) ease,
+          border-color var(--motion-fast) ease;
+      }
+
+      .theme-chip:hover {
+        color: var(--text-primary);
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+
+      .theme-chip--active {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: transparent;
+        color: #141414;
+        font-weight: 600;
+      }
+
+      /* 番茄红 · 深 */
+      body[data-palette='tomato'][data-scheme='dark'] {
+        --bg-glass: rgba(26, 22, 20, 0.85);
+        --text-primary: #f2efea;
+        --text-secondary: #9a948c;
+        --ring-focus: #e8503a;
+        --ring-break: #5fbf8c;
+      }
+
+      /* 极简黑白 · 浅 */
+      body[data-palette='minimal'][data-scheme='light'] {
+        --bg-glass: rgba(250, 250, 250, 0.82);
+        --text-primary: #1f1f1f;
+        --text-secondary: #6e6e6e;
+        --ring-track: rgba(0, 0, 0, 0.16);
+        --ring-focus: #2b2b2b;
+        --ring-break: #3e9e6e;
+      }
+
+      /* 番茄红 · 浅 */
+      body[data-palette='tomato'][data-scheme='light'] {
+        --bg-glass: rgba(252, 248, 246, 0.85);
+        --text-primary: #221c19;
+        --text-secondary: #7a716a;
+        --ring-track: rgba(0, 0, 0, 0.14);
+        --ring-focus: #c44330;
+        --ring-break: #3e9e6e;
+      }
+
+      body[data-scheme='light'] .widget {
+        border-color: rgba(0, 0, 0, 0.08);
+      }
+
+      body[data-scheme='light'] .btn {
+        border-color: rgba(0, 0, 0, 0.14);
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-primary);
+      }
+
+      body[data-scheme='light'] .btn--primary {
+        background: rgba(31, 31, 31, 0.92);
+        color: #fafafa;
+      }
+
+      body[data-scheme='light'] .btn--ghost {
+        background: transparent;
+        color: var(--text-secondary);
+      }
+
+      body[data-scheme='light'] .theme-chip,
+      body[data-scheme='light'] .titlebar__dnd,
+      body[data-scheme='light'] .health-banner {
+        border-color: rgba(0, 0, 0, 0.14);
+      }
+
+      body[data-scheme='light'] .theme-chip--active {
+        background: rgba(31, 31, 31, 0.92);
+        color: #fafafa;
+      }
+
+      body[data-scheme='light'] .health-banner {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      body[data-scheme='light'] .toggle {
+        background: rgba(0, 0, 0, 0.18);
+      }
+
+      body[data-scheme='light'] .toggle--on {
+        background: var(--ring-break);
+      }
+
+      body[data-scheme='light'] .demo-panel {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(0, 0, 0, 0.08);
+      }
+
+      /* ---------- 动效（≤0.6s，仅透明度/颜色/描边） ---------- */
+      @keyframes dot-breathe {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+
+      @keyframes ring-flash {
+        0% {
+          stroke-width: 2.5;
+          opacity: 1;
+        }
+        40% {
+          stroke-width: 5;
+          opacity: 0.75;
+        }
+        100% {
+          stroke-width: 2.5;
+          opacity: 1;
+        }
+      }
+      /* ---------- P1-7 手动收纳：侧边细把手（预览用浮层，真机由主进程控制窗口尺寸） ---------- */
+      .titlebar__icon-btn {
+        width: 22px;
+        height: 22px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 12px;
+        line-height: 22px;
+        cursor: pointer;
+        transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+      }
+
+      .titlebar__icon-btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+        color: var(--text-primary);
+      }
+
+      .widget--docked {
+        height: 0;
+        opacity: 0;
+        padding: 0;
+        border-width: 0;
+        box-shadow: none;
+        transition: height var(--motion-fast) ease, opacity var(--motion-fast) ease;
+      }
+
+      .dock-handle {
+        position: fixed;
+        right: 0;
+        top: 50%;
+        width: 10px;
+        height: 160px;
+        margin-top: -80px;
+        padding: 10px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(20, 20, 20, 0.72);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-radius: 5px 0 0 5px;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateX(10px);
+        pointer-events: none;
+        z-index: 10;
+        transition: opacity var(--motion-fast) ease, transform var(--motion-fast) ease,
+          background var(--motion-fast) ease;
+      }
+
+      .dock-handle--visible {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+
+      .dock-handle:hover {
+        background: rgba(34, 34, 34, 0.86);
+      }
+
+      .dock-handle__track {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        width: 2px;
+        height: 100%;
+        overflow: hidden;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .dock-handle__progress {
+        width: 100%;
+        min-height: 2px;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.82);
+        transition: height var(--motion-fast) linear;
+      }
+
+      .dock-handle--break .dock-handle__progress {
+        background: var(--ring-break);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-head">
+      <h1>番茄钟桌面挂件 · MVP 预览模型</h1>
+      <p>240×240 极简黑白毛玻璃挂件 · 对照 PRD §5.2 / §5.3 线框 · 浏览器双击即开</p>
+    </header>
+
+    <!-- 240×240 挂件本体 -->
+    <div class="widget" id="widget">
+      <header class="titlebar">
+        <span class="titlebar__dot" id="statusDot"></span>
+        <span class="titlebar__title" id="titleText">准备专注</span>
+        <span class="titlebar__dnd" id="dndBadge" style="display: none">勿扰</span>
+        <button type="button" class="titlebar__icon-btn" id="btnDock" title="收纳到侧边">⇥</button>
+      </header>
+      <main class="app-body">
+        <div class="timer-ring" id="timerRing">
+          <svg class="timer-ring__svg" viewBox="0 0 120 120" width="126" height="126">
+            <circle class="timer-ring__track" cx="60" cy="60" r="52"></circle>
+            <circle
+              class="timer-ring__progress"
+              id="ringProgress"
+              cx="60"
+              cy="60"
+              r="52"
+              stroke-dasharray="326.73"
+              stroke-dashoffset="0"
+            ></circle>
+          </svg>
+          <div class="timer-ring__content">
+            <div class="timer-ring__time" id="timeText">25:00</div>
+            <div class="timer-ring__caption" id="captionText">准备开始</div>
+          </div>
+        </div>
+
+        <div class="health-banner health-banner--hidden" id="healthBanner"></div>
+
+        <div class="control-bar" id="controlBar">
+          <button type="button" class="btn btn--primary btn--wide" id="btnStart">开始</button>
+        </div>
+
+        <div class="tip-line" id="tipLine" style="visibility: hidden">小贴士：看看 6 米外 20 秒</div>
+
+        <div class="stats-bar">
+          <span>今日</span>
+          <span class="stats-bar__dots" id="statsDots"></span>
+          <span class="stats-bar__divider"></span>
+          <span id="statsFocus">专注 0m</span>
+          <span class="stats-bar__divider" id="cycleDivider" style="display: none"></span>
+          <span class="stats-bar__cycle" id="statsCycle" style="display: none">本组 0/4</span>
+        </div>
+      </main>
+    </div>
+
+    <!-- P1-7 收纳把手浮层（真机为 10×160 独立贴边窗口，此处用 fixed 浮层示意） -->
+    <div class="dock-handle" id="dockHandle" title="点击展开挂件">
+      <div class="dock-handle__track">
+        <div class="dock-handle__progress" id="dockProgress"></div>
+      </div>
+    </div>
+
+    <!-- 演示控制（仅预览页，真机挂件无此面板） -->
+    <section class="demo-panel">
+      <h2>演示控制（仅预览页）</h2>
+      <div class="demo-row">
+        <span class="demo-label">演示加速 ×60（1 秒 = 1 分钟）</span>
+        <button type="button" class="toggle" id="fastToggle" role="switch" aria-checked="false">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">提示音</span>
+        <button type="button" class="toggle toggle--on" id="muteToggle" role="switch" aria-checked="true">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">勿扰模式（提醒仅视觉）</span>
+        <button type="button" class="toggle" id="dndToggle" role="switch" aria-checked="false">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">20-20-20 护眼提醒</span>
+        <button type="button" class="toggle toggle--on" id="eyeToggle" role="switch" aria-checked="true">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">久坐起身提醒</span>
+        <button type="button" class="toggle toggle--on" id="sedToggle" role="switch" aria-checked="true">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">4 个番茄后长休（60 分）</span>
+        <button type="button" class="toggle" id="tieredToggle" role="switch" aria-checked="false">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">视觉主题</span>
+        <div class="theme-picker" id="themePicker">
+          <button type="button" class="theme-chip theme-chip--active" data-theme="minimal">极简黑白</button>
+          <button type="button" class="theme-chip" data-theme="tomato">番茄红</button>
+          <button type="button" class="theme-chip" data-theme="system">跟随系统</button>
+        </div>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">当前阶段</span>
+        <span class="demo-value" id="phaseText">专注 25 分 → 休息 5 分</span>
+      </div>
+      <div class="demo-actions">
+        <button type="button" class="btn btn--ghost" id="btnResetAll">重置演示</button>
+      </div>
+      <p class="demo-hint">
+        操作说明：<strong>开始 / 暂停 / 重置 / 跳过</strong> 与真机一致；专注 25 分到点自动进入休息
+        5 分（圆环变护眼绿、文案切换、轻提示音），休息到点回到「开始下一个番茄」。
+        开启 <strong>×60 加速</strong>后 25 秒走完一个番茄、5 秒走完休息，便于快速查看状态流转。
+        <strong>20-20-20 护眼</strong>（加速下每 20 秒）与 <strong>久坐提醒</strong>（加速下每 45 秒）到点显示横幅 + 轻提示音；
+        <strong>勿扰模式</strong>下所有提醒仅视觉不发声；主题支持极简黑白 / 番茄红 / 跟随系统（深浅色自动切换）。
+        提示音为 WebAudio 合成柔和短音（无外部素材、无系统弹窗、无语音）。
+      </p>
+    </section>
+
+    <script>
+      (function () {
+        'use strict';
+
+        // ---------- 常量（与 src/shared 保持一致） ----------
+        var MINUTE_MS = 60000;
+        var FOCUS_MINUTES = 25;
+        var BREAK_MINUTES = 5;
+        var LONG_BREAK_MINUTES = 60;
+        var LONG_BREAK_EVERY = 4;
+        var TICK_MS = 250;
+        var RADIUS = 52;
+        var CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+        var REMIND_FLASH_MS = 600;
+        var REMIND_MERGE_MS = 250;
+
+        // ---------- 状态 ----------
+        var phase = 'focus'; // focus | shortBreak | longBreak
+        var status = 'idle'; // idle | running | paused
+        var remainingMs = FOCUS_MINUTES * MINUTE_MS;
+        var totalMs = remainingMs;
+        var endsAt = null;
+        var completedPomodoros = 0;
+        var cyclePomodoros = 0;
+        var focusMsTotal = 0;
+        var fastMode = false;
+        var soundOn = true;
+        var dndOn = false;
+        var eyeOn = true;
+        var sedOn = true;
+        var tieredOn = false;
+        var themeChoice = 'minimal'; // minimal | tomato | system
+        var systemScheme = 'dark';
+        var remindUntil = 0;
+        var lastEyeAt = Date.now();
+        var lastSedAt = Date.now();
+        var docked = false;
+
+        // ---------- DOM ----------
+        var widget = document.getElementById('widget');
+        var titleText = document.getElementById('titleText');
+        var statusDot = document.getElementById('statusDot');
+        var dndBadge = document.getElementById('dndBadge');
+        var timeText = document.getElementById('timeText');
+        var captionText = document.getElementById('captionText');
+        var ringProgress = document.getElementById('ringProgress');
+        var timerRing = document.getElementById('timerRing');
+        var healthBanner = document.getElementById('healthBanner');
+        var controlBar = document.getElementById('controlBar');
+        var tipLine = document.getElementById('tipLine');
+        var statsDots = document.getElementById('statsDots');
+        var statsFocus = document.getElementById('statsFocus');
+        var statsCycle = document.getElementById('statsCycle');
+        var cycleDivider = document.getElementById('cycleDivider');
+        var phaseText = document.getElementById('phaseText');
+        var fastToggle = document.getElementById('fastToggle');
+        var muteToggle = document.getElementById('muteToggle');
+        var dndToggle = document.getElementById('dndToggle');
+        var eyeToggle = document.getElementById('eyeToggle');
+        var sedToggle = document.getElementById('sedToggle');
+        var tieredToggle = document.getElementById('tieredToggle');
+        var themePicker = document.getElementById('themePicker');
+        var btnResetAll = document.getElementById('btnResetAll');
+        var btnDock = document.getElementById('btnDock');
+        var dockHandle = document.getElementById('dockHandle');
+        var dockProgress = document.getElementById('dockProgress');
+
+        // ---------- 时间格式化（与 shared/format.ts 一致） ----------
+        function pad2(v) {
+          return String(v).padStart(2, '0');
+        }
+
+        function formatMmSs(ms) {
+          var safe = Number.isFinite(ms) ? Math.max(0, ms) : 0;
+          var totalSeconds = Math.ceil(safe / 1000);
+          return pad2(Math.floor(totalSeconds / 60)) + ':' + pad2(totalSeconds % 60);
+        }
+
+        function formatDurationMs(ms) {
+          var safe = Number.isFinite(ms) ? Math.max(0, ms) : 0;
+          var totalMinutes = Math.floor(safe / MINUTE_MS);
+          var h = Math.floor(totalMinutes / 60);
+          var m = totalMinutes % 60;
+          return h > 0 ? h + 'h' + pad2(m) + 'm' : m + 'm';
+        }
+
+        // ---------- WebAudio 轻提示音（与 src/renderer/src/audio.ts 同源） ----------
+        var audioCtx = null;
+
+        function getAudioContext() {
+          var Ctor = window.AudioContext || window.webkitAudioContext;
+          if (!Ctor) {
+            return null;
+          }
+          if (audioCtx === null) {
+            audioCtx = new Ctor();
+          }
+          return audioCtx;
+        }
+
+        function scheduleTone(ctx, startTime, frequency, duration, peak) {
+          var oscillator = ctx.createOscillator();
+          var gain = ctx.createGain();
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(frequency, startTime);
+          var floor = 0.0001;
+          var attack = Math.min(0.06, duration * 0.2);
+          var release = Math.min(0.25, duration * 0.5);
+          var sustain = Math.max(peak, floor * 2);
+          gain.gain.setValueAtTime(floor, startTime);
+          gain.gain.exponentialRampToValueAtTime(sustain, startTime + attack);
+          gain.gain.setValueAtTime(sustain, startTime + duration - release);
+          gain.gain.exponentialRampToValueAtTime(floor, startTime + duration);
+          oscillator.connect(gain);
+          gain.connect(ctx.destination);
+          oscillator.start(startTime);
+          oscillator.stop(startTime + duration + 0.02);
+        }
+
+        function playRemind(kind) {
+          if (!soundOn || dndOn) {
+            return;
+          }
+          var ctx = getAudioContext();
+          if (ctx === null) {
+            return;
+          }
+          if (ctx.state === 'suspended') {
+            void ctx.resume();
+          }
+          var peak = 0.16;
+          var t0 = ctx.currentTime + 0.02;
+          if (kind === 'focusEnd') {
+            scheduleTone(ctx, t0, 660, 0.55, peak);
+          } else if (kind === 'breakEnd') {
+            scheduleTone(ctx, t0, 523.25, 0.32, peak);
+            scheduleTone(ctx, t0 + 0.18, 659.25, 0.42, peak);
+          } else if (kind === 'eyeCare') {
+            scheduleTone(ctx, t0, 659.25, 0.4, peak);
+          } else {
+            scheduleTone(ctx, t0, 392, 0.5, peak);
+          }
+        }
+
+        // ---------- 提醒合并（防双音轰炸，与主进程 REMIND_MERGE_MS 同源） ----------
+        var pendingKinds = [];
+        var mergeTimer = null;
+        var healthHideTimer = null;
+
+        function enqueueRemind(kind) {
+          pendingKinds.push(kind);
+          if (mergeTimer !== null) {
+            return;
+          }
+          mergeTimer = setTimeout(function () {
+            mergeTimer = null;
+            var kinds = pendingKinds.filter(function (k, i) {
+              return pendingKinds.indexOf(k) === i;
+            });
+            pendingKinds = [];
+            var priority = ['focusEnd', 'breakEnd', 'sedentary', 'eyeCare'];
+            var primary = kind;
+            for (var i = 0; i < priority.length; i += 1) {
+              if (kinds.indexOf(priority[i]) >= 0) {
+                primary = priority[i];
+                break;
+              }
+            }
+            remindUntil = Date.now() + REMIND_FLASH_MS;
+            playRemind(primary);
+            var bannerText = null;
+            for (var j = 0; j < kinds.length; j += 1) {
+              if (kinds[j] === 'eyeCare') {
+                bannerText = '护眼 20-20-20 · 看看 6 米外 20 秒';
+                break;
+              }
+              if (kinds[j] === 'sedentary') {
+                bannerText = '久坐提醒 · 起身活动一下';
+                break;
+              }
+            }
+            if (bannerText !== null) {
+              healthBanner.textContent = bannerText;
+              healthBanner.classList.remove('health-banner--hidden');
+              if (healthHideTimer !== null) {
+                clearTimeout(healthHideTimer);
+              }
+              healthHideTimer = setTimeout(function () {
+                healthBanner.classList.add('health-banner--hidden');
+                healthHideTimer = null;
+              }, 15000);
+            }
+            render();
+          }, REMIND_MERGE_MS);
+        }
+
+        // 首次手势解锁 AudioContext
+        function unlockAudio() {
+          var ctx = getAudioContext();
+          if (ctx !== null && ctx.state === 'suspended') {
+            void ctx.resume();
+          }
+        }
+        window.addEventListener('pointerdown', unlockAudio);
+
+        // ---------- 状态机（与 main/timer.ts 流转规则一致，含 P1-4 长休分档） ----------
+        function currentTotalMs() {
+          var minutes = FOCUS_MINUTES;
+          if (phase === 'shortBreak') {
+            minutes = BREAK_MINUTES;
+          } else if (phase === 'longBreak') {
+            minutes = LONG_BREAK_MINUTES;
+          }
+          return minutes * MINUTE_MS;
+        }
+
+        function nextBreakPhase() {
+          if (tieredOn && cyclePomodoros > 0 && cyclePomodoros % LONG_BREAK_EVERY === 0) {
+            return 'longBreak';
+          }
+          return 'shortBreak';
+        }
+
+        function start() {
+          if (status === 'running') {
+            return;
+          }
+          status = 'running';
+          endsAt = Date.now() + remainingMs;
+          render();
+        }
+
+        function pause() {
+          if (status !== 'running') {
+            return;
+          }
+          remainingMs = Math.max(0, (endsAt || Date.now()) - Date.now());
+          status = 'paused';
+          endsAt = null;
+          render();
+        }
+
+        function reset() {
+          totalMs = currentTotalMs();
+          remainingMs = totalMs;
+          status = 'idle';
+          endsAt = null;
+          render();
+        }
+
+        function skip() {
+          completePhase();
+        }
+
+        function startNext() {
+          // 休息中一键进入下一番茄：跳过剩余休息 + 立即开始
+          skip();
+          start();
+        }
+
+        function completePhase() {
+          if (phase === 'focus') {
+            // 与主进程一致：按实际已专注时长结算，跳过不再按满额计入
+            var elapsedFocus = Math.max(0, Math.min(totalMs, totalMs - remainingMs));
+            if (elapsedFocus > 0) {
+              completedPomodoros += 1;
+              focusMsTotal += elapsedFocus;
+            }
+            cyclePomodoros += 1;
+            phase = nextBreakPhase();
+            totalMs = currentTotalMs();
+            remainingMs = totalMs;
+            status = 'running';
+            endsAt = Date.now() + remainingMs;
+            enqueueRemind('focusEnd');
+          } else {
+            phase = 'focus';
+            totalMs = currentTotalMs();
+            remainingMs = totalMs;
+            status = 'idle';
+            endsAt = null;
+            enqueueRemind('breakEnd');
+          }
+          render();
+        }
+
+        // ---------- 渲染 ----------
+        function titleFor() {
+          if (phase === 'focus') {
+            if (status === 'running') return '专注中';
+            if (status === 'paused') return '已暂停';
+            return '准备专注';
+          }
+          if (status === 'running') return phase === 'longBreak' ? '长休中' : '休息一下';
+          if (status === 'paused') return '休息暂停';
+          return '休息就绪';
+        }
+
+        function captionFor() {
+          if (phase === 'focus') {
+            if (status === 'running') return '专注中';
+            if (status === 'paused') return '已暂停';
+            return '准备开始';
+          }
+          if (status === 'running') return '起身远眺';
+          if (status === 'paused') return '休息暂停';
+          return '休息就绪';
+        }
+
+        function renderControls() {
+          var html = '';
+          if (status === 'running') {
+            html += '<button type="button" class="btn" data-action="pause">暂停</button>';
+            if (phase === 'focus') {
+              html += '<button type="button" class="btn btn--ghost" data-action="skip">跳过</button>';
+            } else {
+              html +=
+                '<button type="button" class="btn btn--primary" data-action="startNext">开始下一个番茄</button>';
+            }
+          } else if (status === 'paused') {
+            html += '<button type="button" class="btn btn--primary" data-action="start">继续</button>';
+            html += '<button type="button" class="btn btn--ghost" data-action="reset">重置</button>';
+          } else {
+            var label = phase === 'focus' && completedPomodoros > 0 ? '开始下一个番茄' : '开始';
+            html +=
+              '<button type="button" class="btn btn--primary btn--wide" data-action="start">' +
+              label +
+              '</button>';
+          }
+          controlBar.innerHTML = html;
+        }
+
+        function renderStats() {
+          var dots = '';
+          for (var i = 0; i < 4; i += 1) {
+            dots +=
+              '<span class="stats-bar__dot' +
+              (i < completedPomodoros ? ' stats-bar__dot--filled' : '') +
+              '"></span>';
+          }
+          statsDots.innerHTML = dots;
+          statsFocus.textContent = '专注 ' + formatDurationMs(focusMsTotal);
+          if (tieredOn) {
+            var inCycle = cyclePomodoros > 0 ? ((cyclePomodoros - 1) % LONG_BREAK_EVERY) + 1 : 0;
+            statsCycle.textContent = '本组 ' + inCycle + '/' + LONG_BREAK_EVERY;
+            statsCycle.style.display = '';
+            cycleDivider.style.display = '';
+          } else {
+            statsCycle.style.display = 'none';
+            cycleDivider.style.display = 'none';
+          }
+        }
+
+        var lastControlsKey = '';
+
+        function render() {
+          var isBreak = phase !== 'focus';
+          widget.classList.toggle('widget--break', isBreak);
+          titleText.textContent = titleFor();
+          captionText.textContent = captionFor();
+          timeText.textContent = formatMmSs(remainingMs);
+          dndBadge.style.display = dndOn ? '' : 'none';
+
+          var ratio = totalMs > 0 ? Math.min(1, Math.max(0, remainingMs / totalMs)) : 0;
+          ringProgress.setAttribute('stroke-dashoffset', String(CIRCUMFERENCE * (1 - ratio)));
+          if (docked) {
+            syncDockProgress();
+          }
+
+          var reminding = Date.now() < remindUntil;
+          timerRing.classList.toggle('timer-ring--reminding', reminding);
+          statusDot.classList.toggle('titlebar__dot--running', status === 'running');
+
+          tipLine.style.visibility = isBreak ? 'visible' : 'hidden';
+
+          var speedNote = fastMode ? '（加速 ×60）' : '';
+          if (phase === 'focus') {
+            phaseText.textContent = fastMode
+              ? '专注 25 分（加速 25 秒）'
+              : '专注 25 分 → 休息 5 分';
+          } else if (phase === 'longBreak') {
+            phaseText.textContent = '长休 60 分' + speedNote;
+          } else {
+            phaseText.textContent = fastMode ? '休息 5 分（加速 5 秒）' : '短休 5 分';
+          }
+
+          // 仅在状态/阶段变化时重建按钮，避免每 tick 重绘 DOM
+          var controlsKey = status + '|' + phase + '|' + (completedPomodoros > 0 ? 'n' : 'f');
+          if (controlsKey !== lastControlsKey) {
+            lastControlsKey = controlsKey;
+            renderControls();
+          }
+          renderStats();
+        }
+
+        // ---------- P1-7 手动收纳到侧边（方案 B：仅手动，无悬停自动展开） ----------
+        function syncDockProgress() {
+          var ratio = totalMs > 0 ? Math.min(1, Math.max(0, remainingMs / totalMs)) : 0;
+          dockProgress.style.height = (ratio * 100).toFixed(2) + '%';
+          dockHandle.classList.toggle('dock-handle--break', phase !== 'focus');
+        }
+
+        function setDocked(next) {
+          docked = next;
+          widget.classList.toggle('widget--docked', docked);
+          dockHandle.classList.toggle('dock-handle--visible', docked);
+          if (docked) {
+            syncDockProgress();
+          }
+        }
+
+        btnDock.addEventListener('click', function () {
+          setDocked(true);
+        });
+
+        dockHandle.addEventListener('click', function () {
+          setDocked(false);
+        });
+
+        // ---------- 事件 ----------
+        controlBar.addEventListener('click', function (event) {
+          var target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          var action = target.getAttribute('data-action');
+          if (action === 'start') start();
+          else if (action === 'pause') pause();
+          else if (action === 'reset') reset();
+          else if (action === 'skip') skip();
+          else if (action === 'startNext') startNext();
+        });
+
+        fastToggle.addEventListener('click', function () {
+          fastMode = !fastMode;
+          fastToggle.classList.toggle('toggle--on', fastMode);
+          fastToggle.setAttribute('aria-checked', fastMode ? 'true' : 'false');
+          render();
+        });
+
+        muteToggle.addEventListener('click', function () {
+          soundOn = !soundOn;
+          // 按钮语义：开启=提示音开
+          muteToggle.classList.toggle('toggle--on', soundOn);
+          muteToggle.setAttribute('aria-checked', soundOn ? 'true' : 'false');
+        });
+
+        function bindSwitch(button, getValue, setValue) {
+          button.addEventListener('click', function () {
+            var next = !getValue();
+            setValue(next);
+            button.classList.toggle('toggle--on', next);
+            button.setAttribute('aria-checked', next ? 'true' : 'false');
+            render();
+          });
+        }
+
+        bindSwitch(dndToggle, function () { return dndOn; }, function (v) { dndOn = v; });
+        bindSwitch(eyeToggle, function () { return eyeOn; }, function (v) {
+          eyeOn = v;
+          lastEyeAt = Date.now();
+        });
+        bindSwitch(sedToggle, function () { return sedOn; }, function (v) {
+          sedOn = v;
+          lastSedAt = Date.now();
+        });
+        bindSwitch(tieredToggle, function () { return tieredOn; }, function (v) { tieredOn = v; });
+
+        // ---------- 主题（P1-3：极简黑白 / 番茄红 / 跟随系统） ----------
+        function applyTheme() {
+          var palette = themeChoice === 'tomato' ? 'tomato' : 'minimal';
+          var scheme = 'dark';
+          if (themeChoice === 'tomato') {
+            scheme = systemScheme;
+          } else if (themeChoice === 'system') {
+            scheme = systemScheme;
+          }
+          document.body.dataset.palette = palette;
+          document.body.dataset.scheme = scheme;
+        }
+
+        if (window.matchMedia) {
+          var mq = window.matchMedia('(prefers-color-scheme: dark)');
+          systemScheme = mq.matches ? 'dark' : 'light';
+          if (mq.addEventListener) {
+            mq.addEventListener('change', function (event) {
+              systemScheme = event.matches ? 'dark' : 'light';
+              applyTheme();
+            });
+          }
+        }
+
+        themePicker.addEventListener('click', function (event) {
+          var target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          var value = target.getAttribute('data-theme');
+          if (value !== 'minimal' && value !== 'tomato' && value !== 'system') return;
+          themeChoice = value;
+          var chips = themePicker.querySelectorAll('.theme-chip');
+          for (var i = 0; i < chips.length; i += 1) {
+            chips[i].classList.toggle('theme-chip--active', chips[i] === target);
+          }
+          applyTheme();
+        });
+
+        btnResetAll.addEventListener('click', function () {
+          completedPomodoros = 0;
+          cyclePomodoros = 0;
+          focusMsTotal = 0;
+          phase = 'focus';
+          lastEyeAt = Date.now();
+          lastSedAt = Date.now();
+          reset();
+        });
+
+        // ---------- 健康提醒（P1-1 20-20-20 / P1-2 久坐，加速下按比例提前） ----------
+        function checkHealth(now) {
+          var factor = fastMode ? 60 : 1;
+          if (eyeOn && now - lastEyeAt >= 20 * MINUTE_MS / factor) {
+            lastEyeAt = now;
+            enqueueRemind('eyeCare');
+          }
+          if (sedOn && now - lastSedAt >= 45 * MINUTE_MS / factor) {
+            lastSedAt = now;
+            enqueueRemind('sedentary');
+          }
+        }
+
+        var lastTickAt = Date.now();
+        setInterval(function () {
+          var now = Date.now();
+          var elapsed = now - lastTickAt;
+          lastTickAt = now;
+          if (status === 'running' && endsAt !== null) {
+            if (fastMode) {
+              // 加速消耗：把真实流逝时间放大 60 倍，推进 endsAt
+              endsAt -= elapsed * 59;
+            }
+            remainingMs = Math.max(0, endsAt - now);
+            if (remainingMs <= 0) {
+              completePhase();
+              return;
+            }
+          }
+          checkHealth(now);
+          render();
+        }, TICK_MS);
+
+        applyTheme();
+        render();
+      })();
+    </script>
+  </body>
+</html>

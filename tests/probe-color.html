@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>probe</title>
+<style>
+.widget--break .timer-ring__progress { stroke: #5fbf8c; }
+.timer-ring__progress { stroke: #ffffff; }
+</style></head>
+<body>
+<div class="widget widget--break" id="w">
+  <div class="timer-ring"><svg><circle class="timer-ring__progress" id="p"></circle></svg></div>
+</div>
+<pre id="out"></pre>
+<script>
+var p = document.getElementById('p');
+var cs = getComputedStyle(p);
+var dot = getComputedStyle(document.getElementById('w'));
+document.getElementById('out').textContent =
+  'PROBE stroke=' + cs.stroke + ' | class=' + document.getElementById('w').className;
+</script>
+</body></html>

@@ -1,0 +1,182 @@
+/**
+ * 设计 token（架构 §7 + P1-3 浅色变体 + 多配色扩展）：
+ * 六族配色：minimal / tomato / forest / ocean / lavender / system（system 复用 minimal）。
+ * 各主题含深浅两套变体（低饱和、毛玻璃质感保持）。
+ * [data-theme] = 配色族，[data-scheme] = 明暗变体（dark|light）。
+ */
+:root {
+  /* —— 极简黑白 · 深（默认经典款） —— */
+  --bg-glass: rgba(20, 20, 20, 0.8);
+  --text-primary: #f5f5f5;
+  --text-secondary: #8a8a8a;
+  --ring-track: rgba(255, 255, 255, 0.3);
+  --ring-focus: #ffffff;
+  --ring-break: #5fbf8c;
+  --accent-tomato: #e8503a;
+  --btn-bg: rgba(255, 255, 255, 0.08);
+  --btn-bg-hover: rgba(255, 255, 255, 0.16);
+  --btn-bg-active: rgba(255, 255, 255, 0.24);
+  --btn-border: rgba(255, 255, 255, 0.18);
+  --btn-border-hover: rgba(255, 255, 255, 0.32);
+  --btn-primary-bg: rgba(255, 255, 255, 0.92);
+  --btn-primary-bg-hover: #ffffff;
+  --btn-primary-bg-active: #e8e8e8;
+  --btn-primary-fg: #141414;
+  --surface-soft: rgba(255, 255, 255, 0.05);
+  --divider: rgba(255, 255, 255, 0.16);
+  --toggle-off: rgba(255, 255, 255, 0.18);
+  --dot-outline: rgba(255, 255, 255, 0.3);
+  --radius: 18px;
+  --motion: 0.6s;
+  --motion-fast: 0.3s;
+  --font-ui: 'Segoe UI', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+  --titlebar-h: 28px;
+}
+
+/* —— 番茄红 / 护眼绿 · 深 —— */
+:root[data-theme='tomato'] {
+  --bg-glass: rgba(26, 22, 20, 0.85);
+  --text-primary: #f2efea;
+  --text-secondary: #9a948c;
+  --ring-focus: #e8503a;
+  --ring-break: #5fbf8c;
+  --btn-primary-fg: #1a1614;
+}
+
+/* —— 森林绿 · 深 —— */
+:root[data-theme='forest'] {
+  --bg-glass: rgba(16, 24, 20, 0.85);
+  --text-primary: #eaf2ec;
+  --text-secondary: #8fa398;
+  --ring-focus: #6cc79a;
+  --ring-break: #d9a441;
+  --btn-primary-fg: #10201a;
+}
+
+/* —— 深海蓝 · 深 —— */
+:root[data-theme='ocean'] {
+  --bg-glass: rgba(12, 20, 28, 0.85);
+  --text-primary: #e8f1f8;
+  --text-secondary: #8ba1b3;
+  --ring-focus: #57a9dd;
+  --ring-break: #5fbf8c;
+  --btn-primary-fg: #0d1a24;
+}
+
+/* —— 薰衣草 · 深 —— */
+:root[data-theme='lavender'] {
+  --bg-glass: rgba(23, 19, 29, 0.85);
+  --text-primary: #f1ebf7;
+  --text-secondary: #a294b3;
+  --ring-focus: #b48ce0;
+  --ring-break: #5fbf8c;
+  --btn-primary-fg: #1b1522;
+}
+
+/* —— 浅色通用结构（各主题只覆盖色彩，结构变量共享） —— */
+:root[data-scheme='light'] {
+  --ring-track: rgba(0, 0, 0, 0.16);
+  --btn-bg: rgba(0, 0, 0, 0.05);
+  --btn-bg-hover: rgba(0, 0, 0, 0.1);
+  --btn-bg-active: rgba(0, 0, 0, 0.16);
+  --btn-border: rgba(0, 0, 0, 0.14);
+  --btn-border-hover: rgba(0, 0, 0, 0.28);
+  --btn-primary-bg: rgba(31, 31, 31, 0.92);
+  --btn-primary-bg-hover: #1f1f1f;
+  --btn-primary-bg-active: #3a3a3a;
+  --btn-primary-fg: #fafafa;
+  --surface-soft: rgba(0, 0, 0, 0.04);
+  --divider: rgba(0, 0, 0, 0.12);
+  --toggle-off: rgba(0, 0, 0, 0.18);
+  --dot-outline: rgba(0, 0, 0, 0.22);
+}
+
+/* —— 极简黑白 · 浅（低饱和浅玻璃） —— */
+:root[data-theme='minimal'][data-scheme='light'] {
+  --bg-glass: rgba(250, 250, 250, 0.82);
+  --text-primary: #1f1f1f;
+  --text-secondary: #6e6e6e;
+  --ring-track: rgba(0, 0, 0, 0.16);
+  --ring-focus: #2b2b2b;
+  --ring-break: #3e9e6e;
+  --accent-tomato: #c44330;
+  --btn-bg: rgba(0, 0, 0, 0.05);
+  --btn-bg-hover: rgba(0, 0, 0, 0.1);
+  --btn-bg-active: rgba(0, 0, 0, 0.16);
+  --btn-border: rgba(0, 0, 0, 0.14);
+  --btn-border-hover: rgba(0, 0, 0, 0.28);
+  --btn-primary-bg: rgba(31, 31, 31, 0.92);
+  --btn-primary-bg-hover: #1f1f1f;
+  --btn-primary-bg-active: #3a3a3a;
+  --btn-primary-fg: #fafafa;
+  --surface-soft: rgba(0, 0, 0, 0.04);
+  --divider: rgba(0, 0, 0, 0.12);
+  --toggle-off: rgba(0, 0, 0, 0.18);
+  --dot-outline: rgba(0, 0, 0, 0.22);
+}
+
+/* —— 番茄红 / 护眼绿 · 浅 —— */
+:root[data-theme='tomato'][data-scheme='light'] {
+  --bg-glass: rgba(252, 248, 246, 0.85);
+  --text-primary: #221c19;
+  --text-secondary: #7a716a;
+  --ring-track: rgba(0, 0, 0, 0.14);
+  --ring-focus: #c44330;
+  --ring-break: #3e9e6e;
+  --accent-tomato: #c44330;
+  --btn-bg: rgba(0, 0, 0, 0.05);
+  --btn-bg-hover: rgba(0, 0, 0, 0.1);
+  --btn-bg-active: rgba(0, 0, 0, 0.16);
+  --btn-border: rgba(0, 0, 0, 0.14);
+  --btn-border-hover: rgba(0, 0, 0, 0.28);
+  --btn-primary-bg: rgba(196, 67, 48, 0.92);
+  --btn-primary-bg-hover: #c44330;
+  --btn-primary-bg-active: #a93828;
+  --btn-primary-fg: #faf7f5;
+  --surface-soft: rgba(0, 0, 0, 0.04);
+  --divider: rgba(0, 0, 0, 0.12);
+  --toggle-off: rgba(0, 0, 0, 0.18);
+  --dot-outline: rgba(0, 0, 0, 0.22);
+}
+
+/* —— 森林绿 · 浅 —— */
+:root[data-theme='forest'][data-scheme='light'] {
+  --bg-glass: rgba(246, 250, 247, 0.86);
+  --text-primary: #18231d;
+  --text-secondary: #5f7267;
+  --ring-focus: #2f8f63;
+  --ring-break: #b07a1f;
+  --accent-tomato: #c44330;
+  --btn-primary-bg: rgba(47, 143, 99, 0.92);
+  --btn-primary-bg-hover: #2f8f63;
+  --btn-primary-bg-active: #267a54;
+  --btn-primary-fg: #f7fbf8;
+}
+
+/* —— 深海蓝 · 浅 —— */
+:root[data-theme='ocean'][data-scheme='light'] {
+  --bg-glass: rgba(245, 250, 253, 0.86);
+  --text-primary: #132430;
+  --text-secondary: #5d7284;
+  --ring-focus: #2478a8;
+  --ring-break: #2f8f63;
+  --accent-tomato: #c44330;
+  --btn-primary-bg: rgba(36, 120, 168, 0.92);
+  --btn-primary-bg-hover: #2478a8;
+  --btn-primary-bg-active: #1e648c;
+  --btn-primary-fg: #f6fafd;
+}
+
+/* —— 薰衣草 · 浅 —— */
+:root[data-theme='lavender'][data-scheme='light'] {
+  --bg-glass: rgba(251, 248, 253, 0.86);
+  --text-primary: #251c30;
+  --text-secondary: #6f6280;
+  --ring-focus: #7b52a8;
+  --ring-break: #2f8f63;
+  --accent-tomato: #c44330;
+  --btn-primary-bg: rgba(123, 82, 168, 0.92);
+  --btn-primary-bg-hover: #7b52a8;
+  --btn-primary-bg-active: #65418a;
+  --btn-primary-fg: #fbf8fd;
+}

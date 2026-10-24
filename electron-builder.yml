@@ -1,0 +1,37 @@
+# electron-builder 打包配置（完工版）
+# 产物：release/番茄钟挂件 Setup 0.2.0.exe（Windows NSIS x64）
+# 执行：node node_modules/electron-builder/bin/electron-builder.js --win
+#   （或 npm run dist:win；本机 npm 派生故障时用前者）
+
+appId: com.gao.pomodoro-widget
+productName: 番茄钟挂件
+copyright: Copyright © 2026
+directories:
+  output: release
+  buildResources: assets
+files:
+  - out/**/*
+  - package.json
+asar: true
+# 无原生依赖（纯 JS react），跳过 native rebuild
+npmRebuild: false
+# 自动更新源：打包时写入 resources/app-update.yml；运行时可用 UPDATE_URL 覆盖。
+# 生产环境替换成自己的静态文件服务器（需能访问 latest.yml 与安装包）。
+publish:
+  provider: generic
+  url: https://updates.example.com/pomodoro/
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/icons/app.ico
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 番茄钟挂件
+  # ASCII 文件名：避免中文路径在更新源 URL 编码/重定向时出现兼容问题
+  artifactName: pomodoro-widget-setup-${version}.exe
+  uninstallDisplayName: 番茄钟挂件

@@ -1,0 +1,1836 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>番茄钟桌面挂件 · MVP 预览模型</title>
+    <style>
+      :root {
+        --bg-glass: rgba(20, 20, 20, 0.8);
+        --text-primary: #f5f5f5;
+        --text-secondary: #8a8a8a;
+        --ring-track: rgba(255, 255, 255, 0.3);
+        --ring-focus: #ffffff;
+        --ring-break: #5fbf8c;
+        --accent-tomato: #e8503a;
+        --radius: 18px;
+        --motion: 0.6s;
+        --motion-fast: 0.3s;
+        --font-ui: 'Segoe UI', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #1c1c1e;
+        background-image: radial-gradient(ellipse at 50% 0%, #2a2a2e 0%, #1c1c1e 60%);
+        color: var(--text-primary);
+        font-family: var(--font-ui);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 32px 16px 48px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page-head {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .page-head h1 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+      }
+
+      .page-head p {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+      }
+
+      /* ---------- 240×240 挂件（对照 PRD §5.2/5.3） ---------- */
+      .widget {
+        width: 240px;
+        height: 240px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+        transition: background var(--motion) ease;
+      }
+
+      .widget--break {
+        background: rgba(20, 26, 22, 0.82);
+      }
+
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 28px;
+        padding: 0 10px;
+      }
+
+      .titlebar__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--ring-focus);
+        transition: background var(--motion-fast) ease;
+      }
+
+      .widget--break .titlebar__dot {
+        background: var(--ring-break);
+      }
+
+      .titlebar__dot--running {
+        animation: dot-breathe var(--motion) ease-in-out infinite;
+      }
+
+      .titlebar__title {
+        flex: 1;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        color: var(--text-secondary);
+        transition: color var(--motion-fast) ease;
+      }
+
+      .app-body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 12px 10px;
+      }
+
+      /* ---------- 圆环 ---------- */
+      .timer-ring {
+        position: relative;
+        width: 126px;
+        height: 126px;
+      }
+
+      .timer-ring__svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .timer-ring__track {
+        fill: none;
+        stroke: var(--ring-track);
+        stroke-width: 2.5;
+      }
+
+      .timer-ring__progress {
+        fill: none;
+        stroke: var(--ring-focus);
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke var(--motion) ease, stroke-dashoffset var(--motion-fast) linear;
+      }
+
+      .widget--break .timer-ring__progress {
+        stroke: var(--ring-break);
+      }
+
+      .timer-ring--reminding .timer-ring__progress {
+        animation: ring-flash var(--motion) ease;
+      }
+
+      .timer-ring__content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+      }
+
+      .timer-ring__time {
+        font-size: 22px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.04em;
+        color: var(--text-primary);
+      }
+
+      .timer-ring__caption {
+        font-size: 11px;
+        color: var(--text-secondary);
+        letter-spacing: 0.06em;
+      }
+
+      /* ---------- 操作按钮 ---------- */
+      .control-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn {
+        min-width: 64px;
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-primary);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease,
+          color var(--motion-fast) ease;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+
+      .btn:active {
+        background: rgba(255, 255, 255, 0.24);
+      }
+
+      .btn--primary {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: transparent;
+        color: #141414;
+        font-weight: 600;
+      }
+
+      .btn--primary:hover {
+        background: #ffffff;
+      }
+
+      .btn--ghost {
+        background: transparent;
+        border-color: rgba(255, 255, 255, 0.14);
+        color: var(--text-secondary);
+      }
+
+      .btn--ghost:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .btn--wide {
+        min-width: 148px;
+      }
+
+      /* ---------- 统计 / 小贴士 ---------- */
+      .stats-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        color: var(--text-secondary);
+      }
+
+      .stats-bar__dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .stats-bar__dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1px solid var(--ring-track);
+        transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+      }
+
+      .stats-bar__dot--filled {
+        background: var(--text-primary);
+        border-color: var(--text-primary);
+      }
+
+      .stats-bar__divider {
+        width: 1px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .tip-line {
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        opacity: 0.9;
+      }
+
+      /* ---------- 演示控制面板（预览页专用） ---------- */
+      .demo-panel {
+        width: 320px;
+        margin-top: 28px;
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .demo-panel h2 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+
+      .demo-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 32px;
+      }
+
+      .demo-row + .demo-row {
+        margin-top: 8px;
+      }
+
+      .demo-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .demo-value {
+        font-size: 12px;
+        color: var(--text-primary);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .toggle {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.18);
+        cursor: pointer;
+        transition: background var(--motion-fast) ease;
+      }
+
+      .toggle--on {
+        background: var(--ring-break);
+      }
+
+      .toggle__knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffffff;
+        transition: left var(--motion-fast) ease;
+      }
+
+      .toggle--on .toggle__knob {
+        left: 18px;
+      }
+
+      .demo-hint {
+        margin-top: 14px;
+        font-size: 11px;
+        line-height: 1.8;
+        color: var(--text-secondary);
+      }
+
+      .demo-hint strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      .demo-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      /* ---------- 勿扰角标 / 健康提醒横幅（P1-1/P1-2/P1-6） ---------- */
+      .titlebar__dnd {
+        padding: 1px 6px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+      }
+
+      .health-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 22px;
+        padding: 3px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 11px;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        color: var(--text-primary);
+        opacity: 1;
+        transition: opacity var(--motion-fast) ease;
+      }
+
+      .health-banner--hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .stats-bar__cycle {
+        color: var(--text-primary);
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---------- 主题变体（P1-3：双主题 + 浅色变体） ---------- */
+      .theme-picker {
+        display: inline-flex;
+        gap: 6px;
+      }
+
+      .theme-chip {
+        height: 24px;
+        padding: 0 10px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-family: var(--font-ui);
+        font-size: 11px;
+        cursor: pointer;
+        transition: background var(--motion-fast) ease, color var(--motion-fast) ease,
+          border-color var(--motion-fast) ease;
+      }
+
+      .theme-chip:hover {
+        color: var(--text-primary);
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+
+      .theme-chip--active {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: transparent;
+        color: #141414;
+        font-weight: 600;
+      }
+
+      /* 番茄红 · 深 */
+      body[data-palette='tomato'][data-scheme='dark'] {
+        --bg-glass: rgba(26, 22, 20, 0.85);
+        --text-primary: #f2efea;
+        --text-secondary: #9a948c;
+        --ring-focus: #e8503a;
+        --ring-break: #5fbf8c;
+      }
+
+      /* 极简黑白 · 浅 */
+      body[data-palette='minimal'][data-scheme='light'] {
+        --bg-glass: rgba(250, 250, 250, 0.82);
+        --text-primary: #1f1f1f;
+        --text-secondary: #6e6e6e;
+        --ring-track: rgba(0, 0, 0, 0.16);
+        --ring-focus: #2b2b2b;
+        --ring-break: #3e9e6e;
+      }
+
+      /* 番茄红 · 浅 */
+      body[data-palette='tomato'][data-scheme='light'] {
+        --bg-glass: rgba(252, 248, 246, 0.85);
+        --text-primary: #221c19;
+        --text-secondary: #7a716a;
+        --ring-track: rgba(0, 0, 0, 0.14);
+        --ring-focus: #c44330;
+        --ring-break: #3e9e6e;
+      }
+
+      body[data-scheme='light'] .widget {
+        border-color: rgba(0, 0, 0, 0.08);
+      }
+
+      body[data-scheme='light'] .btn {
+        border-color: rgba(0, 0, 0, 0.14);
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-primary);
+      }
+
+      body[data-scheme='light'] .btn--primary {
+        background: rgba(31, 31, 31, 0.92);
+        color: #fafafa;
+      }
+
+      body[data-scheme='light'] .btn--ghost {
+        background: transparent;
+        color: var(--text-secondary);
+      }
+
+      body[data-scheme='light'] .theme-chip,
+      body[data-scheme='light'] .titlebar__dnd,
+      body[data-scheme='light'] .health-banner {
+        border-color: rgba(0, 0, 0, 0.14);
+      }
+
+      body[data-scheme='light'] .theme-chip--active {
+        background: rgba(31, 31, 31, 0.92);
+        color: #fafafa;
+      }
+
+      body[data-scheme='light'] .health-banner {
+        background: rgba(0, 0, 0, 0.04);
+      }
+
+      body[data-scheme='light'] .toggle {
+        background: rgba(0, 0, 0, 0.18);
+      }
+
+      body[data-scheme='light'] .toggle--on {
+        background: var(--ring-break);
+      }
+
+      body[data-scheme='light'] .demo-panel {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(0, 0, 0, 0.08);
+      }
+
+      /* ---------- 动效（≤0.6s，仅透明度/颜色/描边） ---------- */
+      @keyframes dot-breathe {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+
+      @keyframes ring-flash {
+        0% {
+          stroke-width: 2.5;
+          opacity: 1;
+        }
+        40% {
+          stroke-width: 5;
+          opacity: 0.75;
+        }
+        100% {
+          stroke-width: 2.5;
+          opacity: 1;
+        }
+      }
+      /* ---------- P1-7 手动收纳：侧边细把手（预览用浮层，真机由主进程控制窗口尺寸） ---------- */
+      .titlebar__icon-btn {
+        width: 22px;
+        height: 22px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 12px;
+        line-height: 22px;
+        cursor: pointer;
+        transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
+      }
+
+      .titlebar__icon-btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+        color: var(--text-primary);
+      }
+
+      .widget--docked {
+        height: 0;
+        opacity: 0;
+        padding: 0;
+        border-width: 0;
+        box-shadow: none;
+        transition: height var(--motion-fast) ease, opacity var(--motion-fast) ease;
+      }
+
+      .dock-handle {
+        position: fixed;
+        right: 0;
+        top: 50%;
+        width: 10px;
+        height: 160px;
+        margin-top: -80px;
+        padding: 10px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(20, 20, 20, 0.72);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border-radius: 5px 0 0 5px;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateX(10px);
+        pointer-events: none;
+        z-index: 10;
+        transition: opacity var(--motion-fast) ease, transform var(--motion-fast) ease,
+          background var(--motion-fast) ease;
+      }
+
+      .dock-handle--visible {
+        opacity: 1;
+        transform: translateX(0);
+        pointer-events: auto;
+      }
+
+      .dock-handle:hover {
+        background: rgba(34, 34, 34, 0.86);
+      }
+
+      .dock-handle__track {
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        width: 2px;
+        height: 100%;
+        overflow: hidden;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .dock-handle__progress {
+        width: 100%;
+        min-height: 2px;
+        border-radius: 1px;
+        background: rgba(255, 255, 255, 0.82);
+        transition: height var(--motion-fast) linear;
+      }
+
+      .dock-handle--break .dock-handle__progress {
+        background: var(--ring-break);
+      }
+    </style>
+  </head>
+  <body>
+    <header class="page-head">
+      <h1>番茄钟桌面挂件 · MVP 预览模型</h1>
+      <p>240×240 极简黑白毛玻璃挂件 · 对照 PRD §5.2 / §5.3 线框 · 浏览器双击即开</p>
+    </header>
+
+    <!-- 240×240 挂件本体 -->
+    <div class="widget" id="widget">
+      <header class="titlebar">
+        <span class="titlebar__dot" id="statusDot"></span>
+        <span class="titlebar__title" id="titleText">准备专注</span>
+        <span class="titlebar__dnd" id="dndBadge" style="display: none">勿扰</span>
+        <button type="button" class="titlebar__icon-btn" id="btnDock" title="收纳到侧边">⇥</button>
+      </header>
+      <main class="app-body">
+        <div class="timer-ring" id="timerRing">
+          <svg class="timer-ring__svg" viewBox="0 0 120 120" width="126" height="126">
+            <circle class="timer-ring__track" cx="60" cy="60" r="52"></circle>
+            <circle
+              class="timer-ring__progress"
+              id="ringProgress"
+              cx="60"
+              cy="60"
+              r="52"
+              stroke-dasharray="326.73"
+              stroke-dashoffset="0"
+            ></circle>
+          </svg>
+          <div class="timer-ring__content">
+            <div class="timer-ring__time" id="timeText">25:00</div>
+            <div class="timer-ring__caption" id="captionText">准备开始</div>
+          </div>
+        </div>
+
+        <div class="health-banner health-banner--hidden" id="healthBanner"></div>
+
+        <div class="control-bar" id="controlBar">
+          <button type="button" class="btn btn--primary btn--wide" id="btnStart">开始</button>
+        </div>
+
+        <div class="tip-line" id="tipLine" style="visibility: hidden">小贴士：看看 6 米外 20 秒</div>
+
+        <div class="stats-bar">
+          <span>今日</span>
+          <span class="stats-bar__dots" id="statsDots"></span>
+          <span class="stats-bar__divider"></span>
+          <span id="statsFocus">专注 0m</span>
+          <span class="stats-bar__divider" id="cycleDivider" style="display: none"></span>
+          <span class="stats-bar__cycle" id="statsCycle" style="display: none">本组 0/4</span>
+        </div>
+      </main>
+    </div>
+
+    <!-- P1-7 收纳把手浮层（真机为 10×160 独立贴边窗口，此处用 fixed 浮层示意） -->
+    <div class="dock-handle" id="dockHandle" title="点击展开挂件">
+      <div class="dock-handle__track">
+        <div class="dock-handle__progress" id="dockProgress"></div>
+      </div>
+    </div>
+
+    <!-- 演示控制（仅预览页，真机挂件无此面板） -->
+    <section class="demo-panel">
+      <h2>演示控制（仅预览页）</h2>
+      <div class="demo-row">
+        <span class="demo-label">演示加速 ×60（1 秒 = 1 分钟）</span>
+        <button type="button" class="toggle" id="fastToggle" role="switch" aria-checked="false">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">提示音</span>
+        <button type="button" class="toggle toggle--on" id="muteToggle" role="switch" aria-checked="true">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">勿扰模式（提醒仅视觉）</span>
+        <button type="button" class="toggle" id="dndToggle" role="switch" aria-checked="false">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">20-20-20 护眼提醒</span>
+        <button type="button" class="toggle toggle--on" id="eyeToggle" role="switch" aria-checked="true">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">久坐起身提醒</span>
+        <button type="button" class="toggle toggle--on" id="sedToggle" role="switch" aria-checked="true">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">4 个番茄后长休（60 分）</span>
+        <button type="button" class="toggle" id="tieredToggle" role="switch" aria-checked="false">
+          <span class="toggle__knob"></span>
+        </button>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">视觉主题</span>
+        <div class="theme-picker" id="themePicker">
+          <button type="button" class="theme-chip theme-chip--active" data-theme="minimal">极简黑白</button>
+          <button type="button" class="theme-chip" data-theme="tomato">番茄红</button>
+          <button type="button" class="theme-chip" data-theme="system">跟随系统</button>
+        </div>
+      </div>
+      <div class="demo-row">
+        <span class="demo-label">当前阶段</span>
+        <span class="demo-value" id="phaseText">专注 25 分 → 休息 5 分</span>
+      </div>
+      <div class="demo-actions">
+        <button type="button" class="btn btn--ghost" id="btnResetAll">重置演示</button>
+      </div>
+      <p class="demo-hint">
+        操作说明：<strong>开始 / 暂停 / 重置 / 跳过</strong> 与真机一致；专注 25 分到点自动进入休息
+        5 分（圆环变护眼绿、文案切换、轻提示音），休息到点回到「开始下一个番茄」。
+        开启 <strong>×60 加速</strong>后 25 秒走完一个番茄、5 秒走完休息，便于快速查看状态流转。
+        <strong>20-20-20 护眼</strong>（加速下每 20 秒）与 <strong>久坐提醒</strong>（加速下每 45 秒）到点显示横幅 + 轻提示音；
+        <strong>勿扰模式</strong>下所有提醒仅视觉不发声；主题支持极简黑白 / 番茄红 / 跟随系统（深浅色自动切换）。
+        提示音为 WebAudio 合成柔和短音（无外部素材、无系统弹窗、无语音）。
+      </p>
+    </section>
+
+    
+<script>
+/* ===== QA mock layer v2 (runs BEFORE app script) ===== */
+window.__qa = {
+  now: Date.now(),
+  ticks: [],
+  timeouts: [],
+  timeoutSeq: 0,
+  oscillatorCount: 0,
+  audioCtxCreated: 0,
+  consoleErrors: [],
+  windowErrors: [],
+  scheme: 'dark',
+  mqListener: null,
+};
+Date.now = function () { return window.__qa.now; };
+
+window.setInterval = function (fn, delay) {
+  window.__qa.ticks.push({ fn: fn, delay: delay });
+  return window.__qa.ticks.length;
+};
+
+window.setTimeout = function (fn, delay) {
+  var id = ++window.__qa.timeoutSeq;
+  window.__qa.timeouts.push({ id: id, fn: fn, delay: delay || 0, due: window.__qa.now + (delay || 0), fired: false });
+  return id;
+};
+window.clearTimeout = function (id) {
+  for (var i = 0; i < window.__qa.timeouts.length; i += 1) {
+    if (window.__qa.timeouts[i].id === id) { window.__qa.timeouts[i].fired = true; return; }
+  }
+};
+
+window.__fireTick = function () {
+  for (var i = 0; i < window.__qa.ticks.length; i += 1) window.__qa.ticks[i].fn();
+};
+window.__fireDueTimeouts = function () {
+  for (var round = 0; round < 10; round += 1) {
+    var fired = false;
+    for (var i = 0; i < window.__qa.timeouts.length; i += 1) {
+      var t = window.__qa.timeouts[i];
+      if (!t.fired && t.due <= window.__qa.now) { t.fired = true; t.fn(); fired = true; }
+    }
+    if (!fired) break;
+  }
+};
+window.__advanceMs = function (ms) {
+  window.__qa.now += ms;
+  window.__fireDueTimeouts();
+};
+window.__advanceMsNoFire = function (ms) { window.__qa.now += ms; };
+window.__pendingTimeouts = function () {
+  return window.__qa.timeouts.filter(function (t) { return !t.fired; }).length;
+};
+
+(function () {
+  var OrigAC = window.AudioContext || window.webkitAudioContext;
+  if (OrigAC) {
+    var Wrapped = function () {
+      window.__qa.audioCtxCreated += 1;
+      var ctx = new OrigAC();
+      var origOsc = ctx.createOscillator.bind(ctx);
+      ctx.createOscillator = function () {
+        window.__qa.oscillatorCount += 1;
+        return origOsc();
+      };
+      return ctx;
+    };
+    Wrapped.prototype = OrigAC.prototype;
+    window.AudioContext = Wrapped;
+    if (window.webkitAudioContext) window.webkitAudioContext = Wrapped;
+  }
+})();
+
+window.matchMedia = function (query) {
+  if (String(query).indexOf('prefers-color-scheme') >= 0) {
+    return {
+      matches: window.__qa.scheme === 'dark',
+      media: query,
+      addEventListener: function (_evt, fn) { window.__qa.mqListener = fn; },
+      removeEventListener: function () { window.__qa.mqListener = null; },
+      addListener: function (fn) { window.__qa.mqListener = fn; },
+      removeListener: function () { window.__qa.mqListener = null; },
+    };
+  }
+  return { matches: false, media: query, addEventListener: function () {}, removeEventListener: function () {}, addListener: function () {}, removeListener: function () {} };
+};
+window.__setSystemScheme = function (s) {
+  window.__qa.scheme = s;
+  if (window.__qa.mqListener) window.__qa.mqListener({ matches: s === 'dark' });
+};
+
+window.addEventListener('error', function (e) {
+  window.__qa.windowErrors.push(String(e.message || e.error));
+});
+var __origConsoleError = console.error;
+console.error = function () {
+  window.__qa.consoleErrors.push(Array.prototype.slice.call(arguments).map(String).join(' '));
+  __origConsoleError.apply(console, arguments);
+};
+</script>
+<script>
+      (function () {
+        'use strict';
+
+        // ---------- 常量（与 src/shared 保持一致） ----------
+        var MINUTE_MS = 60000;
+        var FOCUS_MINUTES = 25;
+        var BREAK_MINUTES = 5;
+        var LONG_BREAK_MINUTES = 60;
+        var LONG_BREAK_EVERY = 4;
+        var TICK_MS = 250;
+        var RADIUS = 52;
+        var CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+        var REMIND_FLASH_MS = 600;
+        var REMIND_MERGE_MS = 250;
+
+        // ---------- 状态 ----------
+        var phase = 'focus'; // focus | shortBreak | longBreak
+        var status = 'idle'; // idle | running | paused
+        var remainingMs = FOCUS_MINUTES * MINUTE_MS;
+        var totalMs = remainingMs;
+        var endsAt = null;
+        var completedPomodoros = 0;
+        var cyclePomodoros = 0;
+        var focusMsTotal = 0;
+        var fastMode = false;
+        var soundOn = true;
+        var dndOn = false;
+        var eyeOn = true;
+        var sedOn = true;
+        var tieredOn = false;
+        var themeChoice = 'minimal'; // minimal | tomato | system
+        var systemScheme = 'dark';
+        var remindUntil = 0;
+        var lastEyeAt = Date.now();
+        var lastSedAt = Date.now();
+        var docked = false;
+
+        // ---------- DOM ----------
+        var widget = document.getElementById('widget');
+        var titleText = document.getElementById('titleText');
+        var statusDot = document.getElementById('statusDot');
+        var dndBadge = document.getElementById('dndBadge');
+        var timeText = document.getElementById('timeText');
+        var captionText = document.getElementById('captionText');
+        var ringProgress = document.getElementById('ringProgress');
+        var timerRing = document.getElementById('timerRing');
+        var healthBanner = document.getElementById('healthBanner');
+        var controlBar = document.getElementById('controlBar');
+        var tipLine = document.getElementById('tipLine');
+        var statsDots = document.getElementById('statsDots');
+        var statsFocus = document.getElementById('statsFocus');
+        var statsCycle = document.getElementById('statsCycle');
+        var cycleDivider = document.getElementById('cycleDivider');
+        var phaseText = document.getElementById('phaseText');
+        var fastToggle = document.getElementById('fastToggle');
+        var muteToggle = document.getElementById('muteToggle');
+        var dndToggle = document.getElementById('dndToggle');
+        var eyeToggle = document.getElementById('eyeToggle');
+        var sedToggle = document.getElementById('sedToggle');
+        var tieredToggle = document.getElementById('tieredToggle');
+        var themePicker = document.getElementById('themePicker');
+        var btnResetAll = document.getElementById('btnResetAll');
+        var btnDock = document.getElementById('btnDock');
+        var dockHandle = document.getElementById('dockHandle');
+        var dockProgress = document.getElementById('dockProgress');
+
+        // ---------- 时间格式化（与 shared/format.ts 一致） ----------
+        function pad2(v) {
+          return String(v).padStart(2, '0');
+        }
+
+        function formatMmSs(ms) {
+          var safe = Number.isFinite(ms) ? Math.max(0, ms) : 0;
+          var totalSeconds = Math.ceil(safe / 1000);
+          return pad2(Math.floor(totalSeconds / 60)) + ':' + pad2(totalSeconds % 60);
+        }
+
+        function formatDurationMs(ms) {
+          var safe = Number.isFinite(ms) ? Math.max(0, ms) : 0;
+          var totalMinutes = Math.floor(safe / MINUTE_MS);
+          var h = Math.floor(totalMinutes / 60);
+          var m = totalMinutes % 60;
+          return h > 0 ? h + 'h' + pad2(m) + 'm' : m + 'm';
+        }
+
+        // ---------- WebAudio 轻提示音（与 src/renderer/src/audio.ts 同源） ----------
+        var audioCtx = null;
+
+        function getAudioContext() {
+          var Ctor = window.AudioContext || window.webkitAudioContext;
+          if (!Ctor) {
+            return null;
+          }
+          if (audioCtx === null) {
+            audioCtx = new Ctor();
+          }
+          return audioCtx;
+        }
+
+        function scheduleTone(ctx, startTime, frequency, duration, peak) {
+          var oscillator = ctx.createOscillator();
+          var gain = ctx.createGain();
+          oscillator.type = 'sine';
+          oscillator.frequency.setValueAtTime(frequency, startTime);
+          var floor = 0.0001;
+          var attack = Math.min(0.06, duration * 0.2);
+          var release = Math.min(0.25, duration * 0.5);
+          var sustain = Math.max(peak, floor * 2);
+          gain.gain.setValueAtTime(floor, startTime);
+          gain.gain.exponentialRampToValueAtTime(sustain, startTime + attack);
+          gain.gain.setValueAtTime(sustain, startTime + duration - release);
+          gain.gain.exponentialRampToValueAtTime(floor, startTime + duration);
+          oscillator.connect(gain);
+          gain.connect(ctx.destination);
+          oscillator.start(startTime);
+          oscillator.stop(startTime + duration + 0.02);
+        }
+
+        function playRemind(kind) {
+          if (!soundOn || dndOn) {
+            return;
+          }
+          var ctx = getAudioContext();
+          if (ctx === null) {
+            return;
+          }
+          if (ctx.state === 'suspended') {
+            void ctx.resume();
+          }
+          var peak = 0.16;
+          var t0 = ctx.currentTime + 0.02;
+          if (kind === 'focusEnd') {
+            scheduleTone(ctx, t0, 660, 0.55, peak);
+          } else if (kind === 'breakEnd') {
+            scheduleTone(ctx, t0, 523.25, 0.32, peak);
+            scheduleTone(ctx, t0 + 0.18, 659.25, 0.42, peak);
+          } else if (kind === 'eyeCare') {
+            scheduleTone(ctx, t0, 659.25, 0.4, peak);
+          } else {
+            scheduleTone(ctx, t0, 392, 0.5, peak);
+          }
+        }
+
+        // ---------- 提醒合并（防双音轰炸，与主进程 REMIND_MERGE_MS 同源） ----------
+        var pendingKinds = [];
+        var mergeTimer = null;
+        var healthHideTimer = null;
+
+        function enqueueRemind(kind) {
+          pendingKinds.push(kind);
+          if (mergeTimer !== null) {
+            return;
+          }
+          mergeTimer = setTimeout(function () {
+            mergeTimer = null;
+            var kinds = pendingKinds.filter(function (k, i) {
+              return pendingKinds.indexOf(k) === i;
+            });
+            pendingKinds = [];
+            var priority = ['focusEnd', 'breakEnd', 'sedentary', 'eyeCare'];
+            var primary = kind;
+            for (var i = 0; i < priority.length; i += 1) {
+              if (kinds.indexOf(priority[i]) >= 0) {
+                primary = priority[i];
+                break;
+              }
+            }
+            remindUntil = Date.now() + REMIND_FLASH_MS;
+            playRemind(primary);
+            var bannerText = null;
+            for (var j = 0; j < kinds.length; j += 1) {
+              if (kinds[j] === 'eyeCare') {
+                bannerText = '护眼 20-20-20 · 看看 6 米外 20 秒';
+                break;
+              }
+              if (kinds[j] === 'sedentary') {
+                bannerText = '久坐提醒 · 起身活动一下';
+                break;
+              }
+            }
+            if (bannerText !== null) {
+              healthBanner.textContent = bannerText;
+              healthBanner.classList.remove('health-banner--hidden');
+              if (healthHideTimer !== null) {
+                clearTimeout(healthHideTimer);
+              }
+              healthHideTimer = setTimeout(function () {
+                healthBanner.classList.add('health-banner--hidden');
+                healthHideTimer = null;
+              }, 15000);
+            }
+            render();
+          }, REMIND_MERGE_MS);
+        }
+
+        // 首次手势解锁 AudioContext
+        function unlockAudio() {
+          var ctx = getAudioContext();
+          if (ctx !== null && ctx.state === 'suspended') {
+            void ctx.resume();
+          }
+        }
+        window.addEventListener('pointerdown', unlockAudio);
+
+        // ---------- 状态机（与 main/timer.ts 流转规则一致，含 P1-4 长休分档） ----------
+        function currentTotalMs() {
+          var minutes = FOCUS_MINUTES;
+          if (phase === 'shortBreak') {
+            minutes = BREAK_MINUTES;
+          } else if (phase === 'longBreak') {
+            minutes = LONG_BREAK_MINUTES;
+          }
+          return minutes * MINUTE_MS;
+        }
+
+        function nextBreakPhase() {
+          if (tieredOn && cyclePomodoros > 0 && cyclePomodoros % LONG_BREAK_EVERY === 0) {
+            return 'longBreak';
+          }
+          return 'shortBreak';
+        }
+
+        function start() {
+          if (status === 'running') {
+            return;
+          }
+          status = 'running';
+          endsAt = Date.now() + remainingMs;
+          render();
+        }
+
+        function pause() {
+          if (status !== 'running') {
+            return;
+          }
+          remainingMs = Math.max(0, (endsAt || Date.now()) - Date.now());
+          status = 'paused';
+          endsAt = null;
+          render();
+        }
+
+        function reset() {
+          totalMs = currentTotalMs();
+          remainingMs = totalMs;
+          status = 'idle';
+          endsAt = null;
+          render();
+        }
+
+        function skip() {
+          completePhase();
+        }
+
+        function startNext() {
+          // 休息中一键进入下一番茄：跳过剩余休息 + 立即开始
+          skip();
+          start();
+        }
+
+        function completePhase() {
+          if (phase === 'focus') {
+            // 与主进程一致：按实际已专注时长结算，跳过不再按满额计入
+            var elapsedFocus = Math.max(0, Math.min(totalMs, totalMs - remainingMs));
+            if (elapsedFocus > 0) {
+              completedPomodoros += 1;
+              focusMsTotal += elapsedFocus;
+            }
+            cyclePomodoros += 1;
+            phase = nextBreakPhase();
+            totalMs = currentTotalMs();
+            remainingMs = totalMs;
+            status = 'running';
+            endsAt = Date.now() + remainingMs;
+            enqueueRemind('focusEnd');
+          } else {
+            phase = 'focus';
+            totalMs = currentTotalMs();
+            remainingMs = totalMs;
+            status = 'idle';
+            endsAt = null;
+            enqueueRemind('breakEnd');
+          }
+          render();
+        }
+
+        // ---------- 渲染 ----------
+        function titleFor() {
+          if (phase === 'focus') {
+            if (status === 'running') return '专注中';
+            if (status === 'paused') return '已暂停';
+            return '准备专注';
+          }
+          if (status === 'running') return phase === 'longBreak' ? '长休中' : '休息一下';
+          if (status === 'paused') return '休息暂停';
+          return '休息就绪';
+        }
+
+        function captionFor() {
+          if (phase === 'focus') {
+            if (status === 'running') return '专注中';
+            if (status === 'paused') return '已暂停';
+            return '准备开始';
+          }
+          if (status === 'running') return '起身远眺';
+          if (status === 'paused') return '休息暂停';
+          return '休息就绪';
+        }
+
+        function renderControls() {
+          var html = '';
+          if (status === 'running') {
+            html += '<button type="button" class="btn" data-action="pause">暂停</button>';
+            if (phase === 'focus') {
+              html += '<button type="button" class="btn btn--ghost" data-action="skip">跳过</button>';
+            } else {
+              html +=
+                '<button type="button" class="btn btn--primary" data-action="startNext">开始下一个番茄</button>';
+            }
+          } else if (status === 'paused') {
+            html += '<button type="button" class="btn btn--primary" data-action="start">继续</button>';
+            html += '<button type="button" class="btn btn--ghost" data-action="reset">重置</button>';
+          } else {
+            var label = phase === 'focus' && completedPomodoros > 0 ? '开始下一个番茄' : '开始';
+            html +=
+              '<button type="button" class="btn btn--primary btn--wide" data-action="start">' +
+              label +
+              '</button>';
+          }
+          controlBar.innerHTML = html;
+        }
+
+        function renderStats() {
+          var dots = '';
+          for (var i = 0; i < 4; i += 1) {
+            dots +=
+              '<span class="stats-bar__dot' +
+              (i < completedPomodoros ? ' stats-bar__dot--filled' : '') +
+              '"></span>';
+          }
+          statsDots.innerHTML = dots;
+          statsFocus.textContent = '专注 ' + formatDurationMs(focusMsTotal);
+          if (tieredOn) {
+            var inCycle = cyclePomodoros > 0 ? ((cyclePomodoros - 1) % LONG_BREAK_EVERY) + 1 : 0;
+            statsCycle.textContent = '本组 ' + inCycle + '/' + LONG_BREAK_EVERY;
+            statsCycle.style.display = '';
+            cycleDivider.style.display = '';
+          } else {
+            statsCycle.style.display = 'none';
+            cycleDivider.style.display = 'none';
+          }
+        }
+
+        var lastControlsKey = '';
+
+        function render() {
+          var isBreak = phase !== 'focus';
+          widget.classList.toggle('widget--break', isBreak);
+          titleText.textContent = titleFor();
+          captionText.textContent = captionFor();
+          timeText.textContent = formatMmSs(remainingMs);
+          dndBadge.style.display = dndOn ? '' : 'none';
+
+          var ratio = totalMs > 0 ? Math.min(1, Math.max(0, remainingMs / totalMs)) : 0;
+          ringProgress.setAttribute('stroke-dashoffset', String(CIRCUMFERENCE * (1 - ratio)));
+          if (docked) {
+            syncDockProgress();
+          }
+
+          var reminding = Date.now() < remindUntil;
+          timerRing.classList.toggle('timer-ring--reminding', reminding);
+          statusDot.classList.toggle('titlebar__dot--running', status === 'running');
+
+          tipLine.style.visibility = isBreak ? 'visible' : 'hidden';
+
+          var speedNote = fastMode ? '（加速 ×60）' : '';
+          if (phase === 'focus') {
+            phaseText.textContent = fastMode
+              ? '专注 25 分（加速 25 秒）'
+              : '专注 25 分 → 休息 5 分';
+          } else if (phase === 'longBreak') {
+            phaseText.textContent = '长休 60 分' + speedNote;
+          } else {
+            phaseText.textContent = fastMode ? '休息 5 分（加速 5 秒）' : '短休 5 分';
+          }
+
+          // 仅在状态/阶段变化时重建按钮，避免每 tick 重绘 DOM
+          var controlsKey = status + '|' + phase + '|' + (completedPomodoros > 0 ? 'n' : 'f');
+          if (controlsKey !== lastControlsKey) {
+            lastControlsKey = controlsKey;
+            renderControls();
+          }
+          renderStats();
+        }
+
+        // ---------- P1-7 手动收纳到侧边（方案 B：仅手动，无悬停自动展开） ----------
+        function syncDockProgress() {
+          var ratio = totalMs > 0 ? Math.min(1, Math.max(0, remainingMs / totalMs)) : 0;
+          dockProgress.style.height = (ratio * 100).toFixed(2) + '%';
+          dockHandle.classList.toggle('dock-handle--break', phase !== 'focus');
+        }
+
+        function setDocked(next) {
+          docked = next;
+          widget.classList.toggle('widget--docked', docked);
+          dockHandle.classList.toggle('dock-handle--visible', docked);
+          if (docked) {
+            syncDockProgress();
+          }
+        }
+
+        btnDock.addEventListener('click', function () {
+          setDocked(true);
+        });
+
+        dockHandle.addEventListener('click', function () {
+          setDocked(false);
+        });
+
+        // ---------- 事件 ----------
+        controlBar.addEventListener('click', function (event) {
+          var target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          var action = target.getAttribute('data-action');
+          if (action === 'start') start();
+          else if (action === 'pause') pause();
+          else if (action === 'reset') reset();
+          else if (action === 'skip') skip();
+          else if (action === 'startNext') startNext();
+        });
+
+        fastToggle.addEventListener('click', function () {
+          fastMode = !fastMode;
+          fastToggle.classList.toggle('toggle--on', fastMode);
+          fastToggle.setAttribute('aria-checked', fastMode ? 'true' : 'false');
+          render();
+        });
+
+        muteToggle.addEventListener('click', function () {
+          soundOn = !soundOn;
+          // 按钮语义：开启=提示音开
+          muteToggle.classList.toggle('toggle--on', soundOn);
+          muteToggle.setAttribute('aria-checked', soundOn ? 'true' : 'false');
+        });
+
+        function bindSwitch(button, getValue, setValue) {
+          button.addEventListener('click', function () {
+            var next = !getValue();
+            setValue(next);
+            button.classList.toggle('toggle--on', next);
+            button.setAttribute('aria-checked', next ? 'true' : 'false');
+            render();
+          });
+        }
+
+        bindSwitch(dndToggle, function () { return dndOn; }, function (v) { dndOn = v; });
+        bindSwitch(eyeToggle, function () { return eyeOn; }, function (v) {
+          eyeOn = v;
+          lastEyeAt = Date.now();
+        });
+        bindSwitch(sedToggle, function () { return sedOn; }, function (v) {
+          sedOn = v;
+          lastSedAt = Date.now();
+        });
+        bindSwitch(tieredToggle, function () { return tieredOn; }, function (v) { tieredOn = v; });
+
+        // ---------- 主题（P1-3：极简黑白 / 番茄红 / 跟随系统） ----------
+        function applyTheme() {
+          var palette = themeChoice === 'tomato' ? 'tomato' : 'minimal';
+          var scheme = 'dark';
+          if (themeChoice === 'tomato') {
+            scheme = systemScheme;
+          } else if (themeChoice === 'system') {
+            scheme = systemScheme;
+          }
+          document.body.dataset.palette = palette;
+          document.body.dataset.scheme = scheme;
+        }
+
+        if (window.matchMedia) {
+          var mq = window.matchMedia('(prefers-color-scheme: dark)');
+          systemScheme = mq.matches ? 'dark' : 'light';
+          if (mq.addEventListener) {
+            mq.addEventListener('change', function (event) {
+              systemScheme = event.matches ? 'dark' : 'light';
+              applyTheme();
+            });
+          }
+        }
+
+        themePicker.addEventListener('click', function (event) {
+          var target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+          var value = target.getAttribute('data-theme');
+          if (value !== 'minimal' && value !== 'tomato' && value !== 'system') return;
+          themeChoice = value;
+          var chips = themePicker.querySelectorAll('.theme-chip');
+          for (var i = 0; i < chips.length; i += 1) {
+            chips[i].classList.toggle('theme-chip--active', chips[i] === target);
+          }
+          applyTheme();
+        });
+
+        btnResetAll.addEventListener('click', function () {
+          completedPomodoros = 0;
+          cyclePomodoros = 0;
+          focusMsTotal = 0;
+          phase = 'focus';
+          lastEyeAt = Date.now();
+          lastSedAt = Date.now();
+          reset();
+        });
+
+        // ---------- 健康提醒（P1-1 20-20-20 / P1-2 久坐，加速下按比例提前） ----------
+        function checkHealth(now) {
+          var factor = fastMode ? 60 : 1;
+          if (eyeOn && now - lastEyeAt >= 20 * MINUTE_MS / factor) {
+            lastEyeAt = now;
+            enqueueRemind('eyeCare');
+          }
+          if (sedOn && now - lastSedAt >= 45 * MINUTE_MS / factor) {
+            lastSedAt = now;
+            enqueueRemind('sedentary');
+          }
+        }
+
+        var lastTickAt = Date.now();
+        setInterval(function () {
+          var now = Date.now();
+          var elapsed = now - lastTickAt;
+          lastTickAt = now;
+          if (status === 'running' && endsAt !== null) {
+            if (fastMode) {
+              // 加速消耗：把真实流逝时间放大 60 倍，推进 endsAt
+              endsAt -= elapsed * 59;
+            }
+            remainingMs = Math.max(0, endsAt - now);
+            if (remainingMs <= 0) {
+              completePhase();
+              return;
+            }
+          }
+          checkHealth(now);
+          render();
+        }, TICK_MS);
+
+        applyTheme();
+        render();
+      })();
+    </script>
+
+<script>
+/* ===== QA assertion driver v2 (runs AFTER app script) ===== */
+(function () {
+  'use strict';
+  var results = [];
+  function ok(name, cond, detail) {
+    results.push({ name: name, pass: !!cond, detail: detail || '' });
+  }
+  function $(id) { return document.getElementById(id); }
+  function timeText() { return $('timeText').textContent; }
+  function titleText() { return $('titleText').textContent; }
+  function captionText() { return $('captionText').textContent; }
+  function widgetClass() { return $('widget').className; }
+  function btnLabels() {
+    var btns = $('controlBar').querySelectorAll('button');
+    var out = [];
+    for (var i = 0; i < btns.length; i += 1) out.push(btns[i].textContent.trim());
+    return out.join('|');
+  }
+  function clickAction(action) {
+    var btns = $('controlBar').querySelectorAll('button');
+    for (var i = 0; i < btns.length; i += 1) {
+      if (btns[i].getAttribute('data-action') === action) { btns[i].click(); return true; }
+    }
+    return false;
+  }
+  function filledDots() { return $('statsDots').querySelectorAll('.stats-bar__dot--filled').length; }
+  function ringOffset() { return parseFloat($('ringProgress').getAttribute('stroke-dashoffset')); }
+  function bannerText() { return $('healthBanner').textContent; }
+  function bannerVisible() { return $('healthBanner').className.indexOf('health-banner--hidden') < 0; }
+  function dndBadgeShown() { return $('dndBadge').style.display !== 'none'; }
+  function cycleText() { return $('statsCycle').style.display === 'none' ? '(hidden)' : $('statsCycle').textContent; }
+  function themeAttrs() {
+    return 'palette=' + document.body.dataset.palette + ' scheme=' + document.body.dataset.scheme;
+  }
+  function ringFocusVar() { return getComputedStyle(document.body).getPropertyValue('--ring-focus').trim(); }
+  function ringStroke() {
+    var el = $('ringProgress');
+    el.style.transition = 'none';
+    var s = getComputedStyle(el).stroke;
+    el.style.transition = '';
+    return s;
+  }
+  function flushRemind() { window.__advanceMs(300); }
+
+  /* ================= P0 回归（期望值已按「默认短休 5 分」更新） ================= */
+  var widget = $('widget');
+  var cs = window.getComputedStyle(widget);
+  ok('C1-widget-240x240', cs.width === '240px' && cs.height === '240px', cs.width + 'x' + cs.height);
+  ok('C1-radius-rounded', parseFloat(cs.borderRadius) >= 16, 'border-radius=' + cs.borderRadius);
+  ok('C1-glass-bg', (cs.backdropFilter && cs.backdropFilter !== 'none') || (cs.webkitBackdropFilter && cs.webkitBackdropFilter !== 'none'),
+     'backdrop=' + (cs.backdropFilter || cs.webkitBackdropFilter || 'n/a') + ' bg=' + cs.backgroundColor);
+  var svg = document.querySelector('.timer-ring__svg');
+  ok('C1-svg-ring-present', svg !== null && svg.querySelectorAll('circle').length === 2);
+
+  ok('C2-initial-25-00', timeText() === '25:00', 'got=' + timeText());
+  ok('C2-initial-caption', captionText() === '准备开始', 'got=' + captionText());
+
+  ok('C3-btn-start-present', btnLabels() === '开始', btnLabels());
+  clickAction('start');
+  ok('C3-after-start-title', titleText() === '专注中', titleText());
+  var offsetAtStart = ringOffset();
+  window.__advanceMs(60000);
+  window.__fireTick();
+  ok('C3-countdown-decreased', timeText() === '24:00', 'got=' + timeText());
+  ok('C3-ring-shrinks', ringOffset() > offsetAtStart, offsetAtStart + ' -> ' + ringOffset());
+
+  ok('C3b-btn-pause-present', btnLabels().indexOf('暂停') >= 0, btnLabels());
+  clickAction('pause');
+  var frozen = timeText();
+  ok('C3b-paused-caption', captionText() === '已暂停', captionText());
+  window.__advanceMs(300000);
+  window.__fireTick();
+  window.__fireTick();
+  ok('C3b-pause-frozen', timeText() === frozen, 'frozen=' + frozen + ' after=' + timeText());
+  ok('C3b-resume-btn', btnLabels().indexOf('继续') >= 0 && btnLabels().indexOf('重置') >= 0, btnLabels());
+  clickAction('start');
+  window.__advanceMs(1000);
+  window.__fireTick();
+  ok('C3b-resume-no-drift', timeText() === '23:59', 'frozen=' + frozen + ' resumed=' + timeText());
+
+  clickAction('pause');
+  clickAction('reset');
+  ok('C3c-reset-full', timeText() === '25:00', 'got=' + timeText());
+  ok('C3c-reset-idle', btnLabels() === '开始', btnLabels());
+
+  var dotBefore = filledDots();
+  clickAction('start');
+  clickAction('skip');
+  flushRemind();
+  ok('C3d-skip-to-break', widgetClass().indexOf('widget--break') >= 0, widgetClass());
+  ok('C3d-break-5-00', timeText() === '05:00', 'got=' + timeText());
+  ok('C3d-break-caption', captionText() === '起身远眺', captionText());
+  ok('C3d-break-title', titleText() === '休息一下', titleText());
+  ok('C3d-stat-counted', filledDots() === dotBefore + 1, dotBefore + ' -> ' + filledDots());
+  ok('C3d-break-cta', btnLabels().indexOf('开始下一个番茄') >= 0, btnLabels());
+
+  $('btnResetAll').click();
+  window.__fireTick();
+  ok('C4-reset-clean', timeText() === '25:00' && widgetClass().indexOf('widget--break') < 0, timeText());
+  var oscBefore = window.__qa.oscillatorCount;
+  clickAction('start');
+  window.__advanceMs(25 * 60 * 1000);
+  window.__fireTick();
+  flushRemind();
+  ok('C4-auto-to-break', widgetClass().indexOf('widget--break') >= 0, widgetClass());
+  ok('C4-break-text-switch', titleText() === '休息一下' && captionText() === '起身远眺', titleText() + '/' + captionText());
+  ok('C4-tip-visible', $('tipLine').style.visibility === 'visible', $('tipLine').style.visibility);
+  ok('C4-sound-focusEnd', window.__qa.oscillatorCount > oscBefore, 'osc ' + oscBefore + ' -> ' + window.__qa.oscillatorCount);
+  ok('C4-remind-flash-class', $('timerRing').className.indexOf('timer-ring--reminding') >= 0, $('timerRing').className);
+  window.__advanceMs(5 * 60 * 1000);
+  window.__fireTick();
+  flushRemind();
+  ok('C4-back-to-focus-idle', widgetClass().indexOf('widget--break') < 0 && titleText() === '准备专注', widgetClass() + '/' + titleText());
+  ok('C4-breakEnd-cta', btnLabels().indexOf('开始下一个番茄') >= 0, btnLabels());
+  ok('C4-tip-hidden-focus', $('tipLine').style.visibility === 'hidden', $('tipLine').style.visibility);
+
+  $('btnResetAll').click();
+  window.__fireTick();
+  $('fastToggle').click();
+  ok('C5-fast-toggle-on', $('fastToggle').className.indexOf('toggle--on') >= 0, $('fastToggle').className);
+  ok('C5-fast-label', $('phaseText').textContent.indexOf('加速') >= 0, $('phaseText').textContent);
+  clickAction('start');
+  window.__advanceMs(1000);
+  window.__fireTick();
+  ok('C5-fast-60x-consume', timeText() === '24:00', 'after 1s real -> ' + timeText());
+  window.__advanceMs(24000);
+  window.__fireTick();
+  flushRemind();
+  ok('C5-fast-to-break', widgetClass().indexOf('widget--break') >= 0, timeText() + ' ' + widgetClass());
+  $('fastToggle').click();
+
+  $('btnResetAll').click();
+  window.__fireTick();
+  $('muteToggle').click();
+  var oscMutedBefore = window.__qa.oscillatorCount;
+  clickAction('start');
+  clickAction('skip');
+  flushRemind();
+  ok('C6-muted-no-sound', window.__qa.oscillatorCount === oscMutedBefore, oscMutedBefore + ' -> ' + window.__qa.oscillatorCount);
+  $('muteToggle').click();
+  $('btnResetAll').click();
+  window.__fireTick();
+  var oscOnBefore = window.__qa.oscillatorCount;
+  clickAction('start');
+  clickAction('skip');
+  flushRemind();
+  ok('C6-unmuted-sound', window.__qa.oscillatorCount > oscOnBefore, oscOnBefore + ' -> ' + window.__qa.oscillatorCount);
+  ok('C6-audioctx-used', window.__qa.audioCtxCreated >= 1, 'audioCtxCreated=' + window.__qa.audioCtxCreated);
+
+  var ALLOWED = /^(MVP|PRD|WebAudio|CSS|HTML|SVG|App|Electron|Node|npm|Windows|NSIS|ID|UI)$/i;
+  function collectText(root, out) {
+    if (root.nodeType === 3) { var t = root.textContent.trim(); if (t) out.push(t); return; }
+    if (root.nodeType !== 1) return;
+    if (root.tagName === 'SCRIPT' || root.tagName === 'STYLE') return;
+    for (var i = 0; i < root.childNodes.length; i += 1) collectText(root.childNodes[i], out);
+  }
+  var uiRoots = [$('widget'), document.querySelector('.demo-panel'), document.querySelector('.page-head')];
+  var textNodes = [];
+  for (var r = 0; r < uiRoots.length; r += 1) { if (uiRoots[r]) collectText(uiRoots[r], textNodes); }
+  var latin = [];
+  for (var i = 0; i < textNodes.length; i += 1) {
+    var stripped = textNodes[i].replace(/\d+(?:h\d*m?|m|s|ms)/g, ' ').replace(/\d+\s*\/\s*\d+/g, ' ');
+    var words = stripped.match(/[A-Za-z]+/g) || [];
+    for (var w = 0; w < words.length; w += 1) {
+      if (!ALLOWED.test(words[w])) latin.push(words[w] + ' @ "' + textNodes[i].slice(0, 28) + '"');
+    }
+  }
+  ok('C7-ui-chinese', latin.length === 0, 'unexpected latin words: ' + JSON.stringify(latin.slice(0, 5)));
+  $('btnResetAll').click();
+  window.__fireTick();
+  ok('C7-cn-core-copy',
+     $('titleText').textContent === '准备专注' &&
+     $('captionText').textContent === '准备开始' &&
+     $('statsFocus').textContent.indexOf('专注') === 0 &&
+     $('tipLine').textContent.indexOf('小贴士') === 0,
+     $('titleText').textContent + '/' + $('captionText').textContent + '/' + $('statsFocus').textContent);
+  clickAction('start');
+  ok('C7-cn-running-copy', $('titleText').textContent === '专注中' && $('captionText').textContent === '专注中', $('titleText').textContent);
+  $('btnResetAll').click();
+  window.__fireTick();
+  ok('C7-no-console-error', window.__qa.consoleErrors.length === 0, JSON.stringify(window.__qa.consoleErrors.slice(0, 3)));
+  ok('C7-no-window-error', window.__qa.windowErrors.length === 0, JSON.stringify(window.__qa.windowErrors.slice(0, 3)));
+
+  $('btnResetAll').click();
+  window.__fireTick();
+  clickAction('start');
+  window.__advanceMs(5 * 60 * 1000);
+  window.__fireTick();
+  clickAction('skip');
+  flushRemind();
+  ok('X-stats-focus-text', $('statsFocus').textContent.indexOf('25m') >= 0, $('statsFocus').textContent);
+  ok('X-stats-one-dot', filledDots() === 1, String(filledDots()));
+
+  /* ================= P1 新增 ================= */
+
+  $('btnResetAll').click();
+  window.__fireTick();
+  ok('P1-default-phase-label', $('phaseText').textContent.indexOf('休息 5 分') >= 0, $('phaseText').textContent);
+  clickAction('start');
+  clickAction('skip');
+  flushRemind();
+  ok('P1-default-shortbreak-5min', timeText() === '05:00', 'got=' + timeText());
+  ok('P1-shortbreak-label', $('phaseText').textContent.indexOf('5 分') >= 0 && $('phaseText').textContent.indexOf('60') < 0, $('phaseText').textContent);
+  ok('P1-no-60-in-shortbreak-ui',
+     $('phaseText').textContent.indexOf('60') < 0 && $('captionText').textContent.indexOf('60') < 0,
+     $('phaseText').textContent);
+
+  /* B② P1-1 护眼：×60 下 20 秒触发 */
+  $('btnResetAll').click();
+  window.__fireTick();
+  $('fastToggle').click();
+  var oscEyeBefore = window.__qa.oscillatorCount;
+  window.__advanceMsNoFire(20100);
+  window.__fireTick();
+  ok('P1-1-eyecare-enqueued', window.__pendingTimeouts() >= 1, 'pending=' + window.__pendingTimeouts());
+  window.__advanceMs(300);
+  ok('P1-1-eyecare-banner', bannerVisible() && bannerText().indexOf('护眼 20-20-20') >= 0, bannerText());
+  ok('P1-1-eyecare-sound', window.__qa.oscillatorCount > oscEyeBefore, oscEyeBefore + ' -> ' + window.__qa.oscillatorCount);
+
+  /* B③ P1-2 久坐：45 秒触发（先关护眼以隔离单类横幅） */
+  $('btnResetAll').click();
+  window.__fireTick();
+  $('eyeToggle').click();
+  var oscSedBefore = window.__qa.oscillatorCount;
+  window.__advanceMsNoFire(45100);
+  window.__fireTick();
+  window.__advanceMs(300);
+  ok('P1-2-sedentary-banner', bannerVisible() && bannerText().indexOf('久坐提醒') >= 0 && bannerText().indexOf('起身活动一下') >= 0, bannerText());
+  ok('P1-2-sedentary-sound', window.__qa.oscillatorCount > oscSedBefore, oscSedBefore + ' -> ' + window.__qa.oscillatorCount);
+  $('eyeToggle').click();
+  $('fastToggle').click();
+
+  /* B④ 防双音：250ms 合并窗口 */
+  $('btnResetAll').click();
+  window.__fireTick();
+  $('fastToggle').click();
+  clickAction('start');
+  window.__advanceMsNoFire(20100);
+  window.__fireTick();
+  ok('P1-merge-pending-one', window.__pendingTimeouts() >= 1, 'pending=' + window.__pendingTimeouts());
+  window.__advanceMsNoFire(4900);
+  window.__fireTick();
+  var oscMergeBefore = window.__qa.oscillatorCount;
+  var pendingBeforeFire = window.__pendingTimeouts();
+  window.__advanceMs(300);
+  var oscDelta = window.__qa.oscillatorCount - oscMergeBefore;
+  ok('P1-merge-single-sound', oscDelta === 1, 'oscDelta=' + oscDelta + ' (1=merged focusEnd single tone; 2=double sound bug)');
+  ok('P1-merge-one-event', pendingBeforeFire >= 1 && oscDelta < 2, 'pendingBefore=' + pendingBeforeFire + ' oscDelta=' + oscDelta);
+  ok('P1-merge-banner-kept', bannerVisible() && bannerText().indexOf('护眼') >= 0, bannerText());
+  $('fastToggle').click();
+
+  /* B⑤ P1-3 三主题 */
+  $('btnResetAll').click();
+  window.__fireTick();
+  ok('P1-3-precondition-focus', widgetClass().indexOf('widget--break') < 0, widgetClass());
+  var chips = $('themePicker').querySelectorAll('.theme-chip');
+  function clickChip(name) {
+    for (var i = 0; i < chips.length; i += 1) {
+      if (chips[i].getAttribute('data-theme') === name) { chips[i].click(); return chips[i]; }
+    }
+    return null;
+  }
+  var c1 = clickChip('minimal');
+  ok('P1-3-minimal-active', c1 && c1.className.indexOf('theme-chip--active') >= 0, c1 ? c1.className : 'not found');
+  ok('P1-3-minimal-dataset', themeAttrs().indexOf('palette=minimal') >= 0 && themeAttrs().indexOf('scheme=dark') >= 0, themeAttrs());
+  ok('P1-3-minimal-ring-white', ringStroke() === 'rgb(255, 255, 255)', ringStroke() + ' var=' + ringFocusVar());
+  ok('P1-3-minimal-var', ringFocusVar() === '#ffffff', ringFocusVar());
+  window.__setSystemScheme('dark');
+  clickChip('tomato');
+  ok('P1-3-tomato-dataset', themeAttrs().indexOf('palette=tomato') >= 0 && themeAttrs().indexOf('scheme=dark') >= 0, themeAttrs());
+  ok('P1-3-tomato-dark-ring', ringStroke() === 'rgb(232, 80, 58)', ringStroke() + ' var=' + ringFocusVar());
+  ok('P1-3-tomato-dark-var', ringFocusVar() === '#e8503a', ringFocusVar());
+  window.__setSystemScheme('light');
+  ok('P1-3-tomato-light-scheme', themeAttrs().indexOf('scheme=light') >= 0, themeAttrs());
+  ok('P1-3-tomato-light-ring', ringStroke() === 'rgb(196, 67, 48)', ringStroke() + ' var=' + ringFocusVar());
+  ok('P1-3-tomato-light-var', ringFocusVar() === '#c44330', ringFocusVar());
+  clickChip('system');
+  ok('P1-3-system-follows', themeAttrs().indexOf('palette=minimal') >= 0 && themeAttrs().indexOf('scheme=light') >= 0, themeAttrs());
+  ok('P1-3-system-light-ring', ringStroke() === 'rgb(43, 43, 43)', ringStroke() + ' var=' + ringFocusVar());
+  ok('P1-3-system-light-var', ringFocusVar() === '#2b2b2b', ringFocusVar());
+  window.__setSystemScheme('dark');
+  ok('P1-3-matchmedia-live', themeAttrs().indexOf('scheme=dark') >= 0, themeAttrs());
+  clickChip('minimal');
+
+  /* B⑥ P1-4 长休分档 */
+  $('btnResetAll').click();
+  window.__fireTick();
+  $('tieredToggle').click();
+  ok('P1-4-cycle-hidden-at-zero', cycleText() === '本组 0/4', cycleText());
+  clickAction('start'); clickAction('skip'); flushRemind();
+  ok('P1-4-first-is-short', timeText() === '05:00' && titleText() === '休息一下', timeText() + '/' + titleText());
+  ok('P1-4-cycle-1', cycleText() === '本组 1/4', cycleText());
+  clickAction('startNext'); flushRemind();
+  clickAction('skip'); flushRemind();
+  clickAction('startNext'); flushRemind();
+  clickAction('skip'); flushRemind();
+  ok('P1-4-cycle-3', cycleText() === '本组 3/4', cycleText());
+  clickAction('startNext'); flushRemind();
+  clickAction('skip'); flushRemind();
+  ok('P1-4-longbreak-60', timeText() === '60:00', 'got=' + timeText());
+  ok('P1-4-longbreak-title', titleText() === '长休中', titleText());
+  ok('P1-4-cycle-4', cycleText() === '本组 4/4', cycleText());
+  ok('P1-4-longbreak-label', $('phaseText').textContent.indexOf('长休 60 分') >= 0, $('phaseText').textContent);
+  $('tieredToggle').click();
+  ok('P1-4-cycle-hidden-off', cycleText() === '(hidden)', cycleText());
+
+  /* B⑦ P1-6 勿扰 */
+  $('btnResetAll').click();
+  window.__fireTick();
+  ok('P1-6-badge-hidden-default', !dndBadgeShown(), 'display=' + $('dndBadge').style.display);
+  $('dndToggle').click();
+  ok('P1-6-badge-shown', dndBadgeShown(), 'display=' + $('dndBadge').style.display);
+  var oscDndBefore = window.__qa.oscillatorCount;
+  clickAction('start');
+  clickAction('skip');
+  flushRemind();
+  ok('P1-6-dnd-silent', window.__qa.oscillatorCount === oscDndBefore, oscDndBefore + ' -> ' + window.__qa.oscillatorCount);
+  ok('P1-6-dnd-still-visual', widgetClass().indexOf('widget--break') >= 0, widgetClass());
+  $('dndToggle').click();
+  ok('P1-6-badge-hidden-again', !dndBadgeShown(), 'display=' + $('dndBadge').style.display);
+  var oscDndOff = window.__qa.oscillatorCount;
+  $('btnResetAll').click();
+  window.__fireTick();
+  clickAction('start');
+  clickAction('skip');
+  flushRemind();
+  ok('P1-6-sound-returns', window.__qa.oscillatorCount > oscDndOff, oscDndOff + ' -> ' + window.__qa.oscillatorCount);
+
+  /* 健康提醒开关 */
+  $('btnResetAll').click();
+  window.__fireTick();
+  $('fastToggle').click();
+  $('eyeToggle').click();
+  window.__advanceMsNoFire(21000);
+  window.__fireTick();
+  window.__advanceMs(300);
+  ok('P1-1-eye-off-no-banner', !bannerVisible() || bannerText().indexOf('护眼') < 0, 'banner=' + bannerText());
+  $('eyeToggle').click();
+  $('fastToggle').click();
+
+  /* ================= P1-7 新增：手动收纳到侧边（预览浮层演示） ================= */
+  /* 预览里窗口尺寸由 CSS 模拟：收纳 → widget 收起 + 侧边把手浮层出现；
+     真机由主进程 setBounds 改窗口尺寸，此处只验交互与进度线契约。 */
+  function noTrans(el) { el.style.transition = 'none'; return window.getComputedStyle(el); }
+  function widgetHeight() { return noTrans(widget).height; }
+  function handleVisible() { return $('dockHandle').className.indexOf('dock-handle--visible') >= 0; }
+  function hexToRgb(hex) {
+    var h = String(hex).replace('#', '');
+    return 'rgb(' + parseInt(h.slice(0, 2), 16) + ', ' + parseInt(h.slice(2, 4), 16) + ', ' + parseInt(h.slice(4, 6), 16) + ')';
+  }
+
+  $('btnResetAll').click();
+  window.__fireTick();
+  ok('P1-7-btn-dock-present', $('btnDock') !== null && $('btnDock').title.indexOf('收纳') >= 0, $('btnDock') ? $('btnDock').title : 'missing');
+  ok('P1-7-initial-undocked', !handleVisible() && widget.className.indexOf('widget--docked') < 0, $('dockHandle').className + ' / ' + widget.className);
+  ok('P1-7-initial-handle-invisible', window.getComputedStyle($('dockHandle')).opacity === '0', 'opacity=' + window.getComputedStyle($('dockHandle')).opacity);
+
+  $('btnDock').click();
+  ok('P1-7-dock-click-shows-handle', handleVisible(), $('dockHandle').className);
+  ok('P1-7-dock-card-collapsed', widget.className.indexOf('widget--docked') >= 0 && widgetHeight() === '0px', widget.className + ' height=' + widgetHeight());
+  var handleRect = $('dockHandle').getBoundingClientRect();
+  ok('P1-7-handle-size-10x160', Math.round(handleRect.width) === 10 && Math.round(handleRect.height) === 160, Math.round(handleRect.width) + 'x' + Math.round(handleRect.height));
+  /* 进出场是 opacity/transform 过渡（0.3s），getBoundingClientRect 会读到中途位移，
+     故先关掉过渡再量最终几何（对应真机 setBounds 落定后的 10×160 位置） */
+  noTrans($('dockHandle'));
+  handleRect = $('dockHandle').getBoundingClientRect();
+  /* 视口基准取 documentElement.clientWidth/Height：headless + --hide-scrollbars 下
+     window.innerWidth 与实际布局视口存在偏差，不能用作贴边/居中基准 */
+  var layoutVw = document.documentElement.clientWidth;
+  var layoutVh = document.documentElement.clientHeight;
+  ok('P1-7-handle-flush-right', Math.abs(handleRect.right - layoutVw) <= 1 && Math.abs(handleRect.top + handleRect.height / 2 - layoutVh / 2) <= 1, 'right=' + handleRect.right + '/' + layoutVw + ' top=' + handleRect.top + ' vh=' + layoutVh);
+  /* CSSOM 会把 "100.00%" 序列化为 "100%"，故按数值判定 */
+  ok('P1-7-progress-full-at-idle', Math.abs(parseFloat($('dockProgress').style.height) - 100) < 0.01, 'height=' + $('dockProgress').style.height);
+
+  clickAction('start');
+  window.__advanceMs(60000);
+  window.__fireTick();
+  var dockH1 = parseFloat($('dockProgress').style.height);
+  ok('P1-7-docked-countdown-continues', timeText() === '24:00', 'got=' + timeText());
+  ok('P1-7-progress-tracks-remaining', dockH1 > 90 && dockH1 < 100, 'height=' + dockH1);
+  window.__advanceMs(60000);
+  window.__fireTick();
+  var dockH2 = parseFloat($('dockProgress').style.height);
+  ok('P1-7-progress-follows-timer', dockH2 < dockH1, dockH1 + ' -> ' + dockH2);
+
+  clickAction('skip');
+  flushRemind();
+  ok('P1-7-break-handle-class', $('dockHandle').className.indexOf('dock-handle--break') >= 0, $('dockHandle').className);
+  $('dockProgress').style.transition = 'none';
+  var progColor = window.getComputedStyle($('dockProgress')).backgroundColor;
+  var breakHex = window.getComputedStyle(document.body).getPropertyValue('--ring-break').trim();
+  ok('P1-7-break-progress-eyecare-green', progColor === hexToRgb(breakHex), progColor + ' vs ' + breakHex);
+
+  var timeBeforeExpand = timeText();
+  $('dockHandle').click();
+  ok('P1-7-handle-click-restores', !handleVisible() && widget.className.indexOf('widget--docked') < 0, $('dockHandle').className + ' / ' + widget.className);
+  ok('P1-7-card-restored-240', widgetHeight() === '240px', widgetHeight());
+  ok('P1-7-expand-keeps-timer', timeText() === timeBeforeExpand, timeBeforeExpand + ' -> ' + timeText());
+
+  $('btnDock').click();
+  $('btnDock').click();
+  ok('P1-7-double-dock-idempotent', handleVisible() && widget.className.indexOf('widget--docked') >= 0, $('dockHandle').className);
+  $('dockHandle').click();
+  $('dockHandle').click();
+  ok('P1-7-double-expand-idempotent', !handleVisible() && widgetHeight() === '240px', widgetHeight());
+
+  $('btnResetAll').click();
+  window.__fireTick();
+
+  ok('F-no-console-error-final', window.__qa.consoleErrors.length === 0, JSON.stringify(window.__qa.consoleErrors.slice(0, 3)));
+  ok('F-no-window-error-final', window.__qa.windowErrors.length === 0, JSON.stringify(window.__qa.windowErrors.slice(0, 3)));
+
+  var passed = 0, failed = 0;
+  for (var i = 0; i < results.length; i += 1) { if (results[i].pass) passed += 1; else failed += 1; }
+  var lines = ['QA_RESULTS_BEGIN total=' + results.length + ' passed=' + passed + ' failed=' + failed];
+  for (var i = 0; i < results.length; i += 1) {
+    lines.push((results[i].pass ? 'PASS' : 'FAIL') + ' | ' + results[i].name + ' | ' + results[i].detail);
+  }
+  lines.push('QA_RESULTS_END');
+  var pre = document.createElement('pre');
+  pre.id = 'qa-results';
+  pre.style.whiteSpace = 'pre-wrap';
+  pre.textContent = lines.join('\n');
+  document.body.appendChild(pre);
+})();
+</script>
+  </body>
+</html>

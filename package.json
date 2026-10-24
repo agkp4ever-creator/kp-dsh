@@ -1,0 +1,41 @@
+{
+  "name": "pomodoro_desktop_widget",
+  "version": "0.2.1",
+  "private": true,
+  "description": "番茄钟桌面挂件 - 不打扰剪辑节奏的常驻置顶小窗（完整版）",
+  "author": "gao",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test:assert": "node tests/timer-settlement-assert.mjs && node tests/crash-recovery-assert.mjs && node tests/perf-hardening-assert.mjs && node tests/dock-mode-assert.mjs && node tests/window-mode-resize-assert.mjs && node tests/dock-mode-mutation.mjs && node tests/theme-assert.mjs && node tests/update-assert.mjs",
+    "test:theme": "node tests/theme-assert.mjs",
+    "test:update": "node tests/update-assert.mjs",
+    "test:e2e": "node tests/e2e/smoke.spec.mjs && node tests/e2e/crash-recovery.spec.mjs",
+    "test:upgrade": "node tests/e2e/real-upgrade.spec.mjs",
+    "icons": "node scripts/generate-icons.mjs",
+    "dist:win": "electron-vite build && electron-builder --win",
+    "release:win": "node scripts/release.mjs",
+    "serve:updates": "node scripts/serve-updates.mjs",
+    "pack": "electron-builder --dir"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "electron": "^31.0.0",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "playwright": "^1.64.1",
+    "typescript": "^5.6.2",
+    "vite": "^5.4.0"
+  }
+}

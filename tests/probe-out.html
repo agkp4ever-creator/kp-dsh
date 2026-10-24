@@ -1,0 +1,395 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><style>
+      :root {
+        --bg-glass: rgba(20, 20, 20, 0.8);
+        --text-primary: #f5f5f5;
+        --text-secondary: #8a8a8a;
+        --ring-track: rgba(255, 255, 255, 0.3);
+        --ring-focus: #ffffff;
+        --ring-break: #5fbf8c;
+        --accent-tomato: #e8503a;
+        --radius: 18px;
+        --motion: 0.6s;
+        --motion-fast: 0.3s;
+        --font-ui: 'Segoe UI', 'Microsoft YaHei', system-ui, -apple-system, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        background: #1c1c1e;
+        background-image: radial-gradient(ellipse at 50% 0%, #2a2a2e 0%, #1c1c1e 60%);
+        color: var(--text-primary);
+        font-family: var(--font-ui);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 32px 16px 48px;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .page-head {
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .page-head h1 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+      }
+
+      .page-head p {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+      }
+
+      /* ---------- 240脳240 鎸備欢锛堝鐓?PRD 搂5.2/5.3锛?---------- */
+      .widget {
+        width: 240px;
+        height: 240px;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: var(--radius);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        overflow: hidden;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+        transition: background var(--motion) ease;
+      }
+
+      .widget--break {
+        background: rgba(20, 26, 22, 0.82);
+      }
+
+      .titlebar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 28px;
+        padding: 0 10px;
+      }
+
+      .titlebar__dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--ring-focus);
+        transition: background var(--motion-fast) ease;
+      }
+
+      .widget--break .titlebar__dot {
+        background: var(--ring-break);
+      }
+
+      .titlebar__dot--running {
+        animation: dot-breathe var(--motion) ease-in-out infinite;
+      }
+
+      .titlebar__title {
+        flex: 1;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+        color: var(--text-secondary);
+        transition: color var(--motion-fast) ease;
+      }
+
+      .app-body {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 2px 12px 10px;
+      }
+
+      /* ---------- 鍦嗙幆 ---------- */
+      .timer-ring {
+        position: relative;
+        width: 126px;
+        height: 126px;
+      }
+
+      .timer-ring__svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .timer-ring__track {
+        fill: none;
+        stroke: var(--ring-track);
+        stroke-width: 2.5;
+      }
+
+      .timer-ring__progress {
+        fill: none;
+        stroke: var(--ring-focus);
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke var(--motion) ease, stroke-dashoffset var(--motion-fast) linear;
+      }
+
+      .widget--break .timer-ring__progress {
+        stroke: var(--ring-break);
+      }
+
+      .timer-ring--reminding .timer-ring__progress {
+        animation: ring-flash var(--motion) ease;
+      }
+
+      .timer-ring__content {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+      }
+
+      .timer-ring__time {
+        font-size: 22px;
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: 0.04em;
+        color: var(--text-primary);
+      }
+
+      .timer-ring__caption {
+        font-size: 11px;
+        color: var(--text-secondary);
+        letter-spacing: 0.06em;
+      }
+
+      /* ---------- 鎿嶄綔鎸夐挳 ---------- */
+      .control-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn {
+        min-width: 64px;
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-primary);
+        font-family: var(--font-ui);
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        cursor: pointer;
+        transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease,
+          color var(--motion-fast) ease;
+      }
+
+      .btn:hover {
+        background: rgba(255, 255, 255, 0.16);
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+
+      .btn:active {
+        background: rgba(255, 255, 255, 0.24);
+      }
+
+      .btn--primary {
+        background: rgba(255, 255, 255, 0.92);
+        border-color: transparent;
+        color: #141414;
+        font-weight: 600;
+      }
+
+      .btn--primary:hover {
+        background: #ffffff;
+      }
+
+      .btn--ghost {
+        background: transparent;
+        border-color: rgba(255, 255, 255, 0.14);
+        color: var(--text-secondary);
+      }
+
+      .btn--ghost:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .btn--wide {
+        min-width: 148px;
+      }
+
+      /* ---------- 缁熻 / 灏忚创澹?---------- */
+      .stats-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 100%;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        color: var(--text-secondary);
+      }
+
+      .stats-bar__dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .stats-bar__dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: transparent;
+        border: 1px solid var(--ring-track);
+        transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease;
+      }
+
+      .stats-bar__dot--filled {
+        background: var(--text-primary);
+        border-color: var(--text-primary);
+      }
+
+      .stats-bar__divider {
+        width: 1px;
+        height: 10px;
+        background: rgba(255, 255, 255, 0.16);
+      }
+
+      .tip-line {
+        font-size: 10px;
+        letter-spacing: 0.05em;
+        color: var(--text-secondary);
+        opacity: 0.9;
+      }
+
+      /* ---------- 婕旂ず鎺у埗闈㈡澘锛堥瑙堥〉涓撶敤锛?---------- */
+      .demo-panel {
+        width: 320px;
+        margin-top: 28px;
+        padding: 16px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .demo-panel h2 {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+
+      .demo-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 32px;
+      }
+
+      .demo-row + .demo-row {
+        margin-top: 8px;
+      }
+
+      .demo-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .demo-value {
+        font-size: 12px;
+        color: var(--text-primary);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .toggle {
+        position: relative;
+        width: 36px;
+        height: 20px;
+        border: none;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.18);
+        cursor: pointer;
+        transition: background var(--motion-fast) ease;
+      }
+
+      .toggle--on {
+        background: var(--ring-break);
+      }
+
+      .toggle__knob {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #ffffff;
+        transition: left var(--motion-fast) ease;
+      }
+
+      .toggle--on .toggle__knob {
+        left: 18px;
+      }
+
+      .demo-hint {
+        margin-top: 14px;
+        font-size: 11px;
+        line-height: 1.8;
+        color: var(--text-secondary);
+      }
+
+      .demo-hint strong {
+        color: var(--text-primary);
+        font-weight: 600;
+      }
+
+      .demo-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      /* ---------- 鍔ㄦ晥锛堚墹0.6s锛屼粎閫忔槑搴?棰滆壊/鎻忚竟锛?---------- */
+      @keyframes dot-breathe {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.35;
+        }
+      }
+
+      @keyframes ring-flash {
+        0% {
+          stroke-width: 2.5;
+          opacity: 1;
+        }
+        40% {
+          stroke-width: 5;
+          opacity: 0.75;
+        }
+        100% {
+          stroke-width: 2.5;
+          opacity: 1;
+        }
+      }
+    </style></head><body><div class="widget widget--break" id="widget"><header class="titlebar"><span class="titlebar__dot" id="dot"></span></header><div class="timer-ring"><svg><circle class="timer-ring__progress" id="ring"></circle></svg></div></div><pre id="out">PROBE_BREAK ringStroke=rgb(95, 191, 140) dotBg=rgb(95, 191, 140) widgetBg=rgba(20, 26, 22, 0.82) radius=18px w=240px h=240px</pre><script>var ring=getComputedStyle(document.getElementById("ring"));var dot=getComputedStyle(document.getElementById("dot"));var w=getComputedStyle(document.getElementById("widget"));document.getElementById("out").textContent="PROBE_BREAK ringStroke="+ring.stroke+" dotBg="+dot.backgroundColor+" widgetBg="+w.backgroundColor+" radius="+w.borderRadius+" w="+w.width+" h="+w.height;</script></body></html>
