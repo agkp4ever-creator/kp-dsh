@@ -159,7 +159,7 @@ npm run dev
 
 1. 更新 `package.json` 版本号。
 2. `npm run release:win`，产物在 `release/`：`pomodoro-widget-setup-<version>.exe`、`latest.yml`、`.blockmap`。
-3. 在 GitHub 创建 `v<version>` Release，上传上述三个文件。
+3. 运行 `node scripts/publish-github-release.mjs` 创建 Release 并上传上述三个资产（使用 git 凭据或 `GITHUB_TOKEN`）；也可在 GitHub 网页手动创建。
 4. 安装版自动更新读取 Release 中的 `latest.yml`；本地验证可用 `npm run serve:updates` + `UPDATE_URL=http://127.0.0.1:8787`。
 
 ## 数据与隐私
