@@ -98,7 +98,19 @@ try {
   check('设置面板有导出/导入按钮', panel.includes('导出备份') && panel.includes('导入备份'));
   const app = read('src', 'renderer', 'src', 'App.tsx');
   check('App 拉取历史并调用备份 API', app.includes('getHistory(7)') && app.includes('data.exportJson') && app.includes('data.importJson'));
-  check('HistoryChart 组件存在', read('src', 'renderer', 'src', 'components', 'HistoryChart.tsx').includes('近 7 天番茄数'));
+  const chart = read('src', 'renderer', 'src', 'components', 'HistoryChart.tsx');
+  check(
+    'HistoryChart 组件存在',
+    chart.includes('export function HistoryChart') && chart.includes('history-chart__tomato')
+  );
+  const css = read('src', 'renderer', 'src', 'styles', 'global.css');
+  check(
+    'HistoryChart 小番茄/提示/主题色',
+    chart.includes('history-chart__hint') &&
+      chart.includes('history-chart__col--today') &&
+      css.includes('.history-chart__bar') &&
+      css.includes('var(--ring-focus)')
+  );
 } finally {
   rmSync(staging, { recursive: true, force: true });
 }

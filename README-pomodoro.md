@@ -2,7 +2,7 @@
 
 > 不打扰剪辑节奏的常驻桌面番茄钟：240×240 透明置顶小窗，不抢焦点、不占任务栏，到点只轻提示。
 
-Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.1
+Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.2
 
 <p align="center">
   <img src="docs/screenshots/main.png" width="240" alt="主界面" />
@@ -23,7 +23,7 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.1
 | 桌面融合 | 240×240 透明无边框置顶窗，默认不占任务栏；拖拽顶栏移动；➖ 收起为 160×160 半透明紧凑态 |
 | 专注保护 | 自动识别 DaVinci Resolve 等剪辑软件在前台时进入勿扰，提醒只保留视觉变化；也可手动勿扰 |
 | 今日统计 | 今日完成番茄数、累计专注时长，本地持久化 |
-| 历史统计 | 设置页展示近 7 天番茄数柱状图与区间合计，缺失日期自动补零 |
+| 历史统计 | 设置页展示近 7 天小番茄柱状图，柱色随主题切换，今日高亮，悬停查看每日专注时长与区间合计 |
 | 数据备份 | 一键导出完整 JSON（设置 + 历史统计），导入时校验并整体恢复；每次写入自动保留上一版 `.bak` |
 | 护眼与久坐 | 20-20-20 护眼提醒、45 分钟久坐起身提醒，均可单独开关与调间隔 |
 | 桌面常驻 | 托盘菜单（显示 / 设置 / 重启界面 / 退出）、关闭到托盘、开机自启 |
@@ -37,12 +37,16 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.1
   <img src="docs/screenshots/theme-lavender.png" width="200" alt="薰衣草" />
 </p>
 
+<p align="center">
+  <img src="docs/screenshots/history.png" width="240" alt="历史统计" />
+</p>
+
 ## 下载与安装
 
 **安装版（推荐）**
 
-1. 打开 [Releases · v0.3.1](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.1)。
-2. 下载 `pomodoro-widget-setup-0.3.1.exe` 并安装。
+1. 打开 [Releases · v0.3.2](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.2)。
+2. 下载 `pomodoro-widget-setup-0.3.2.exe` 并安装。
 3. 安装版内置自动更新：设置 →「检查更新」，有新版本时下载并重启安装。
 
 **绿色版**
@@ -87,6 +91,12 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.1
 - 日志超过 1MB 轮转并保留 2 份；生产构建注入 CSP。
 
 ## 更新日志
+
+### v0.3.2
+
+- 界面：设置页改为固定头/底 + 自定义细滚动条、分组卡片、主题色卡、长按步进、整行开关；主窗口图标线性化，字号与间距统一。
+- 历史统计：近 7 天柱状图新增小番茄图标、今日高亮、入场揭示动画与空态提示；柱色与图标随 6 套主题及明暗变体适配。
+- 测试：`stats-data` e2e 增加小番茄、今日高亮与图表说明断言；六主题与浅色变体截图人工验收。
 
 ### v0.3.1
 

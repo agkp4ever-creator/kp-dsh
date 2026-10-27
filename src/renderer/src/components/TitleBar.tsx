@@ -4,6 +4,7 @@
  * P1-7：仅在 normal 模式显示「收纳」（settings/compact 不显示）。
  */
 import type { Phase, TimerStatus, WindowMode } from '../../../shared/types';
+import { Icon } from './ui/Icon';
 
 export interface TitleBarProps {
   phase: Phase;
@@ -52,13 +53,16 @@ export function TitleBar({
 }: TitleBarProps): JSX.Element {
   const settingsOpen = windowMode === 'settings';
   const showDock = windowMode === 'normal' && onDock !== undefined;
+  const title = settingsOpen ? '设置' : titleFor(phase, status);
   return (
     <header className="titlebar">
-      <span
-        className={`titlebar__dot titlebar__dot--${phase} titlebar__dot--${status}`}
-        aria-hidden="true"
-      />
-      <span className="titlebar__title">{titleFor(phase, status)}</span>
+      {!settingsOpen && (
+        <span
+          className={`titlebar__dot titlebar__dot--${phase} titlebar__dot--${status}`}
+          aria-hidden="true"
+        />
+      )}
+      <span className="titlebar__title">{title}</span>
       {quiet && (
         <span
           className="titlebar__dnd"
@@ -78,7 +82,7 @@ export function TitleBar({
         title={settingsOpen ? '返回' : '设置'}
         onClick={onOpenSettings}
       >
-        {settingsOpen ? '↩' : '⚙'}
+        {settingsOpen ? <Icon name="back" size={15} /> : <Icon name="settings" size={15} />}
       </button>
       {!settingsOpen && (
         <button
@@ -88,7 +92,7 @@ export function TitleBar({
           title="紧凑模式"
           onClick={onToggleCompact}
         >
-          ➖
+          <Icon name="minimize" size={15} />
         </button>
       )}
       {showDock && (
@@ -99,7 +103,7 @@ export function TitleBar({
           title="收纳到侧边"
           onClick={onDock}
         >
-          ⇥
+          <Icon name="dock" size={15} />
         </button>
       )}
     </header>

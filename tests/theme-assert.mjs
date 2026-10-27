@@ -90,7 +90,7 @@ try {
   const css = read('src/renderer/src/styles/global.css');
   check(
     'theme-picker 为 3 列网格（6 选项两行）',
-    /\.theme-picker\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*auto\)/s.test(css)
+    /\.theme-picker\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*1fr\)/s.test(css)
   );
 } finally {
   rmSync(staging, { recursive: true, force: true });

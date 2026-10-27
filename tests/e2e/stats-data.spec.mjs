@@ -39,6 +39,17 @@ async function main() {
   await win.getByRole('button', { name: '设置' }).click();
   await win.waitForSelector('.history-chart__col', { timeout: 10_000 });
   assert.equal(await win.locator('.history-chart__col').count(), 7, '应渲染 7 根日柱');
+  assert.equal(await win.locator('.history-chart__tomato').count(), 7, '每天应有一枚小番茄');
+  assert.match(
+    await win.locator('.history-chart__hint').innerText(),
+    /当天番茄数|开始第一个番茄/,
+    '应有图表说明或空态提示'
+  );
+  assert.equal(
+    await win.locator('.history-chart__col--today').count(),
+    1,
+    '应高亮今天'
+  );
   const summary = await win
     .locator('.settings-panel__group')
     .filter({ hasText: '近 7 天' })

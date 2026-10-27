@@ -20,6 +20,8 @@ body {
   background: transparent;
   color: var(--text-primary);
   font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.45;
   overflow: hidden;
   user-select: none;
   -webkit-font-smoothing: antialiased;
@@ -98,6 +100,7 @@ body {
 .titlebar__title {
   flex: 1;
   font-size: 12px;
+  font-weight: 500;
   letter-spacing: 0.02em;
   color: var(--text-secondary);
   transition: color var(--motion-fast) ease;
@@ -115,22 +118,29 @@ body {
 }
 
 .titlebar__icon-btn {
-  width: 22px;
-  height: 22px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-secondary);
   font-size: 12px;
-  line-height: 22px;
+  line-height: 1;
   cursor: pointer;
   -webkit-app-region: no-drag;
   transition: background var(--motion-fast) ease, color var(--motion-fast) ease;
 }
 
 .titlebar__icon-btn:hover {
-  background: var(--btn-bg-hover);
+  background: var(--surface-2);
   color: var(--text-primary);
+}
+
+.titlebar__icon-btn:active {
+  background: var(--btn-bg-active);
 }
 
 /* ---------- 圆环 ---------- */
@@ -150,13 +160,13 @@ body {
 .timer-ring__track {
   fill: none;
   stroke: var(--ring-track);
-  stroke-width: 2.5;
+  stroke-width: 2;
 }
 
 .timer-ring__progress {
   fill: none;
   stroke: var(--ring-focus);
-  stroke-width: 2.5;
+  stroke-width: 3;
   stroke-linecap: round;
   transform: rotate(-90deg);
   transform-origin: 50% 50%;
@@ -183,18 +193,19 @@ body {
 }
 
 .timer-ring__time {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   color: var(--text-primary);
   transition: color var(--motion-fast) ease;
 }
 
 .timer-ring__caption {
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 500;
   color: var(--text-secondary);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   transition: color var(--motion-fast) ease;
 }
 
@@ -209,29 +220,31 @@ body {
 }
 
 .btn {
-  min-width: 64px;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--btn-border);
-  border-radius: 14px;
+  min-width: 68px;
+  height: 30px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 15px;
   background: var(--btn-bg);
   color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: 12px;
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  letter-spacing: 0.03em;
   cursor: pointer;
   -webkit-app-region: no-drag;
   transition: background var(--motion-fast) ease, border-color var(--motion-fast) ease,
-    color var(--motion-fast) ease;
+    color var(--motion-fast) ease, transform var(--motion-fast) ease;
 }
 
 .btn:hover {
   background: var(--btn-bg-hover);
-  border-color: var(--btn-border-hover);
+  border-color: var(--border-strong);
 }
 
 .btn:active {
   background: var(--btn-bg-active);
+  transform: translateY(1px);
 }
 
 .btn--primary {
@@ -251,17 +264,18 @@ body {
 
 .btn--ghost {
   background: transparent;
-  border-color: var(--btn-border);
+  border-color: var(--border-subtle);
   color: var(--text-secondary);
 }
 
 .btn--ghost:hover {
   color: var(--text-primary);
-  background: var(--btn-bg);
+  background: var(--surface-1);
+  border-color: var(--border-strong);
 }
 
 .btn--wide {
-  min-width: 148px;
+  min-width: 160px;
 }
 
 /* ---------- 统计条（P0-7 + P1-4 周期指示） ---------- */
@@ -355,74 +369,150 @@ body {
   pointer-events: none;
 }
 
-/* ---------- 设置面板（P0-5 + P1 扩展） ---------- */
+/* ---------- 设置面板（UI 统一层） ---------- */
 .settings-panel {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
   flex: 1;
   min-height: 0;
-  padding: 4px 14px 14px;
-  overflow-y: auto;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
   -webkit-app-region: no-drag;
 }
 
-.settings-panel__title {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--text-primary);
+.settings-panel__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 2px 12px 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) transparent;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  -webkit-app-region: no-drag;
 }
 
-.settings-panel__group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: var(--surface-soft);
+.settings-panel__scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-panel__scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.settings-panel__scroll::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--scroll-thumb);
+  background-clip: padding-box;
+}
+
+.settings-panel__scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--scroll-thumb-hover);
+  background-clip: padding-box;
+}
+
+.settings-panel__scroll::-webkit-scrollbar-button {
+  display: none;
+}
+
+.settings-panel__footer {
+  flex: 0 0 auto;
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--bg-glass) 92%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .settings-panel__done {
-  margin-top: auto;
-  align-self: center;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+  padding: 10px 12px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.settings-section:first-child {
+  margin-top: 2px;
+}
+
+.settings-section__title {
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  letter-spacing: 0.12em;
 }
 
 .setting-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 26px;
+  gap: 12px;
+  min-height: 30px;
+}
+
+.setting-row--button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.setting-row--button:hover .setting-row__label {
+  color: var(--text-primary);
 }
 
 .setting-row__label {
-  font-size: 12px;
+  font-size: var(--text-body);
   color: var(--text-secondary);
+  transition: color var(--motion-fast) ease;
 }
 
 .setting-row__value {
-  font-size: 12px;
+  font-size: var(--text-body);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
-/* 时长微调 */
+/* 时长微调：一体化胶囊 */
 .stepper {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface-2);
 }
 
 .stepper__btn {
+  display: grid;
+  place-items: center;
   width: 24px;
   height: 24px;
-  border: 1px solid var(--btn-border);
-  border-radius: 8px;
-  background: var(--btn-bg);
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
   color: var(--text-primary);
-  font-size: 13px;
-  line-height: 22px;
+  font-size: 14px;
+  line-height: 1;
   cursor: pointer;
   transition: background var(--motion-fast) ease;
 }
@@ -431,65 +521,103 @@ body {
   background: var(--btn-bg-hover);
 }
 
+.stepper__btn:active {
+  background: var(--btn-bg-active);
+}
+
 .stepper__value {
-  min-width: 42px;
+  min-width: 44px;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--text-body);
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
-/* 开关 */
+/* 开关：整行可点，视觉元素独立 */
 .toggle {
   position: relative;
-  width: 36px;
-  height: 20px;
-  border: none;
-  border-radius: 10px;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
   background: var(--toggle-off);
-  cursor: pointer;
-  transition: background var(--motion-fast) ease;
+  transition: background var(--motion-base) ease;
 }
 
 .toggle--on {
-  background: var(--ring-break);
+  background: var(--ring-focus);
 }
 
 .toggle__knob {
   position: absolute;
   top: 2px;
   left: 2px;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #ffffff;
-  transition: left var(--motion-fast) ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+  transition: left var(--motion-base) cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .toggle--on .toggle__knob {
-  left: 18px;
+  left: 20px;
+  background: var(--btn-primary-fg);
 }
 
-/* 音量滑杆 */
+/* 音量滑杆：统一轨道与滑块 */
 .volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  height: 20px;
-  accent-color: var(--ring-focus);
+  height: 28px;
+  margin: 2px 0;
+  background: transparent;
   cursor: pointer;
   -webkit-app-region: no-drag;
 }
 
-/* 历史统计：近 7 天柱状图 */
+.volume-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-subtle);
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text-primary);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.24);
+}
+
+.volume-slider:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* 历史统计：近 7 天柱状图（小番茄 + 主题色柱） */
+.history-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
 .history-chart {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 4px;
-  height: 64px;
-  padding: 2px 0 0;
+  gap: var(--space-2);
+  height: 72px;
+  padding: 0;
 }
 
 .history-chart--empty {
+  height: 72px;
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
@@ -503,7 +631,42 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: 3px;
+  gap: 2px;
+}
+
+.history-chart__tomato {
+  display: block;
+  width: 13px;
+  height: 13px;
+  color: var(--text-secondary);
+  opacity: 0.45;
+}
+
+.history-chart__tomato svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.history-chart__tomato-body {
+  fill: currentColor;
+}
+
+.history-chart__tomato-leaf {
+  fill: var(--ring-break);
+  opacity: 0.85;
+}
+
+.history-chart__tomato--active {
+  color: var(--accent-tomato);
+  opacity: 1;
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--accent-tomato) 35%, transparent));
+  animation: history-tomato-in 0.3s ease both;
+}
+
+.history-chart__col--active .history-chart__tomato-leaf {
+  opacity: 1;
 }
 
 .history-chart__value {
@@ -513,18 +676,69 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.history-chart__col--active .history-chart__value {
+  color: var(--text-primary);
+}
+
 .history-chart__bar {
   width: 100%;
-  max-width: 18px;
-  border-radius: 3px 3px 0 0;
-  background: var(--ring-focus);
-  opacity: 0.85;
+  max-width: 16px;
+  border-radius: 4px 4px 2px 2px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ring-focus) 86%, #ffffff),
+    var(--ring-focus)
+  );
+  animation: history-bar-in 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transition: filter var(--motion-fast) ease;
+}
+
+.history-chart__bar--empty {
+  background: var(--surface-2);
+  animation: none;
+}
+
+.history-chart__col:hover .history-chart__bar {
+  filter: brightness(1.12);
 }
 
 .history-chart__label {
   font-size: 9px;
   line-height: 1;
   color: var(--text-secondary);
+}
+
+.history-chart__col--today .history-chart__label {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.history-chart__hint {
+  font-size: 10px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  text-align: center;
+  opacity: 0.75;
+}
+
+@keyframes history-bar-in {
+  from {
+    clip-path: inset(100% 0 0 0);
+    opacity: 0.35;
+  }
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+}
+
+@keyframes history-tomato-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* 自动更新状态与操作 */
@@ -537,47 +751,66 @@ body {
 
 .update-actions {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .update-actions .btn {
-  height: 24px;
-  padding: 0 10px;
+  height: 26px;
+  min-width: 0;
+  padding: 0 12px;
   font-size: 11px;
 }
 
-/* 主题选择：3 列 × 2 行，避免 6 个选项把 320px 面板撑破 */
+/* 主题选择：色卡 2 行 × 3 列，比文字 chip 更直观 */
 .theme-picker {
   display: grid;
-  grid-template-columns: repeat(3, auto);
-  justify-content: end;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
+  width: 100%;
+  margin-top: 2px;
 }
 
-.theme-chip {
-  height: 24px;
-  padding: 0 8px;
-  border: 1px solid var(--btn-border);
-  border-radius: 12px;
-  background: transparent;
+.theme-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 42px;
+  padding: 6px 7px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
   color: var(--text-secondary);
   font-family: var(--font-ui);
-  font-size: 11px;
   cursor: pointer;
-  transition: background var(--motion-fast) ease, color var(--motion-fast) ease,
-    border-color var(--motion-fast) ease;
+  transition: border-color var(--motion-fast) ease, background var(--motion-fast) ease,
+    color var(--motion-fast) ease, box-shadow var(--motion-fast) ease;
 }
 
-.theme-chip:hover {
+.theme-card:hover {
+  border-color: var(--border-strong);
   color: var(--text-primary);
-  border-color: var(--btn-border-hover);
 }
 
-.theme-chip--active {
-  background: var(--btn-primary-bg);
-  border-color: transparent;
-  color: var(--btn-primary-fg);
-  font-weight: 600;
+.theme-card--active {
+  border-color: var(--ring-focus);
+  background: color-mix(in srgb, var(--ring-focus) 10%, var(--surface-1));
+  color: var(--text-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring-focus) 16%, transparent);
+}
+
+.theme-card__swatch {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  opacity: 0.92;
+}
+
+.theme-card__label {
+  font-size: 10px;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
 }
 
 /* ---------- 收纳把手（P1-7 方案 B）：窗口此时仅 10×160 ---------- */
@@ -651,15 +884,36 @@ body {
 
 @keyframes ring-flash {
   0% {
-    stroke-width: 2.5;
+    stroke-width: 3;
     opacity: 1;
   }
   40% {
-    stroke-width: 5;
+    stroke-width: 6;
     opacity: 0.75;
   }
   100% {
-    stroke-width: 2.5;
+    stroke-width: 3;
     opacity: 1;
+  }
+}
+
+/* ---------- 焦点与图标 ---------- */
+.icon {
+  display: block;
+  flex: 0 0 auto;
+}
+
+:where(button, input, [role='switch']):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
