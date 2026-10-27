@@ -52,6 +52,8 @@ export default function App(): JSX.Element {
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [history, setHistory] = useState<HistoryStats | null>(null);
   const [dataMessage, setDataMessage] = useState<string | null>(null);
+  /** 主进程实际注册成功的唤回组合（可能因冲突降级） */
+  const [restoreShortcut, setRestoreShortcut] = useState('Ctrl + Alt + P');
 
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
@@ -84,6 +86,19 @@ export default function App(): JSX.Element {
       }
     });
     return unsubscribe;
+  }, []);
+
+  // 启动时拉取实际生效的唤回快捷键；Ctrl+Alt+P 被占用时主进程会降级
+  useEffect(() => {
+    let active = true;
+    void window.pomodoro.app.getShortcut().then((result) => {
+      if (active && result.ok && result.data !== undefined) {
+        setRestoreShortcut(result.data.label);
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -252,6 +267,7 @@ export default function App(): JSX.Element {
           onInstallUpdate={handleInstallUpdate}
           history={history}
           dataMessage={dataMessage}
+          restoreShortcut={restoreShortcut}
           onExportData={handleExportData}
           onImportData={handleImportData}
         />
@@ -266,7 +282,7 @@ export default function App(): JSX.Element {
         className="app-shell app-shell--compact"
         title={
           settings.compactClickThrough
-            ? '紧凑态鼠标穿透：双击托盘或 Ctrl+Alt+P 展开'
+            ? `紧凑态鼠标穿透：双击托盘或 ${restoreShortcut} 展开`
             : '点击恢复普通模式'
         }
         onClick={settings.compactClickThrough ? undefined : () => requestMode('normal')}

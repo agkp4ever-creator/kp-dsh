@@ -1,6 +1,6 @@
 {
   "name": "pomodoro_desktop_widget",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "private": true,
   "description": "番茄钟桌面挂件 - 不打扰剪辑节奏的常驻置顶小窗（完整版）",
   "author": "gao",
@@ -10,7 +10,7 @@
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
-    "test:assert": "node tests/timer-settlement-assert.mjs && node tests/crash-recovery-assert.mjs && node tests/perf-hardening-assert.mjs && node tests/dock-mode-assert.mjs && node tests/window-mode-resize-assert.mjs && node tests/dock-mode-mutation.mjs && node tests/theme-assert.mjs && node tests/update-assert.mjs && node tests/stats-data-assert.mjs",
+    "test:assert": "node tests/timer-settlement-assert.mjs && node tests/crash-recovery-assert.mjs && node tests/perf-hardening-assert.mjs && node tests/dock-mode-assert.mjs && node tests/window-mode-resize-assert.mjs && node tests/dock-mode-mutation.mjs && node tests/theme-assert.mjs && node tests/update-assert.mjs && node tests/stats-data-assert.mjs && node tests/shortcut-assert.mjs",
     "test:theme": "node tests/theme-assert.mjs",
     "test:update": "node tests/update-assert.mjs",
     "test:data": "node tests/stats-data-assert.mjs",
@@ -20,7 +20,8 @@
     "dist:win": "electron-vite build && electron-builder --win",
     "release:win": "node scripts/release.mjs",
     "serve:updates": "node scripts/serve-updates.mjs",
-    "pack": "electron-builder --dir"
+    "pack": "electron-builder --dir",
+    "test:shortcut": "node tests/e2e/shortcut-registration.spec.mjs"
   },
   "dependencies": {
     "electron-updater": "^6.8.11",

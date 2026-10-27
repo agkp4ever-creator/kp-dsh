@@ -27,6 +27,8 @@ const constantsTs = readFileSync(join(root, 'src', 'shared', 'constants.ts'), 'u
 const trayTs = readFileSync(join(root, 'src', 'main', 'tray.ts'), 'utf-8');
 const typesTs = readFileSync(join(root, 'src', 'shared', 'types.ts'), 'utf-8');
 const storeTs = readFileSync(join(root, 'src', 'main', 'store.ts'), 'utf-8');
+const ipcTs = readFileSync(join(root, 'src', 'main', 'ipc.ts'), 'utf-8');
+const preloadTs = readFileSync(join(root, 'src', 'preload', 'index.ts'), 'utf-8');
 const settingsPanelTs = readFileSync(
   join(root, 'src', 'renderer', 'src', 'components', 'SettingsPanel.tsx'),
   'utf-8'
@@ -153,8 +155,17 @@ check(
 check('托盘菜单包含「展开挂件」', /label: '展开挂件'/.test(trayTs));
 check('托盘提供首次紧凑态提示', /showCompactHint/.test(trayTs));
 check(
-  '全局快捷键注册 RESTORE_SHORTCUT',
-  /globalShortcut\.register\(RESTORE_SHORTCUT, expandFromCompact\)/.test(indexTs)
+  '全局快捷键按候选列表降级注册',
+  /for \(const accelerator of RESTORE_SHORTCUT_CANDIDATES\)/.test(indexTs) &&
+    /globalShortcut\.register\(accelerator, expandFromCompact\)/.test(indexTs) &&
+    /restoreShortcutRegistered = true/.test(indexTs)
+);
+check(
+  '快捷键冲突时记录实际组合并支持设置页展示',
+  /restoreShortcutLabel = formatShortcutLabel\(accelerator\)/.test(indexTs) &&
+    /SHORTCUT_GET/.test(ipcTs) &&
+    /getShortcut/.test(preloadTs) &&
+    /restoreShortcut/.test(settingsPanelTs)
 );
 check('退出时注销全局快捷键', /globalShortcut\.unregisterAll\(\)/.test(indexTs));
 check('设置面板包含「紧凑态鼠标穿透」开关', /紧凑态鼠标穿透/.test(settingsPanelTs));

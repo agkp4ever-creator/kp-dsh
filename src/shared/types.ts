@@ -150,6 +150,13 @@ export interface IpcResult<T> {
   error?: string;
 }
 
+/** 全局唤回快捷键：实际注册成功的组合与展示文案 */
+export interface ShortcutInfo {
+  accelerator: string;
+  label: string;
+  registered: boolean;
+}
+
 // ---------- 预加载暴露的白名单 API ----------
 export type Unsubscribe = () => void;
 
@@ -207,5 +214,7 @@ export interface PomodoroApi {
   };
   app: {
     quit: () => Promise<IpcResult<null>>;
+    /** 当前实际注册的唤回快捷键；主进程启动时按候选列表择优注册 */
+    getShortcut: () => Promise<IpcResult<ShortcutInfo>>;
   };
 }

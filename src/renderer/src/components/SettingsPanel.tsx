@@ -22,6 +22,8 @@ export interface SettingsPanelProps {
   dataMessage: string | null;
   onExportData: () => void;
   onImportData: () => void;
+  /** 主进程实际注册成功的唤回快捷键文案 */
+  restoreShortcut: string;
 }
 
 const FOCUS_MIN = 1;
@@ -257,6 +259,7 @@ export function SettingsPanel({
   dataMessage,
   onExportData,
   onImportData,
+  restoreShortcut,
 }: SettingsPanelProps): JSX.Element {
   return (
     <section className="settings-panel">
@@ -371,7 +374,7 @@ export function SettingsPanel({
             onChange={(next) => onUpdate({ compactClickThrough: next })}
           />
           <p className="setting-row__hint">
-            开启后紧凑窗不接收鼠标；双击托盘、托盘菜单「展开挂件」或按 Ctrl+Alt+P 展开。
+            开启后紧凑窗不接收鼠标；双击托盘、托盘菜单「展开挂件」或按 {restoreShortcut} 展开。
           </p>
         </Section>
 

@@ -14,6 +14,7 @@ import type {
   PomodoroApi,
   RemindEvent,
   Settings,
+  ShortcutInfo,
   ThemeScheme,
   TimerCommand,
   TimerState,
@@ -144,6 +145,9 @@ const api: PomodoroApi = {
   app: {
     quit: (): Promise<IpcResult<null>> => {
       return ipcRenderer.invoke(IpcChannels.APP_QUIT);
+    },
+    getShortcut: (): Promise<IpcResult<ShortcutInfo>> => {
+      return ipcRenderer.invoke(IpcChannels.SHORTCUT_GET);
     },
   },
 };

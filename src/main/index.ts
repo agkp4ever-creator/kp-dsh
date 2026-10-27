@@ -10,15 +10,24 @@ import {
   IpcChannels,
   REMIND_MERGE_MS,
   RESTORE_SHORTCUT,
+  RESTORE_SHORTCUT_CANDIDATES,
   UNRESPONSIVE_GRACE_MS as DEFAULT_UNRESPONSIVE_GRACE_MS,
 } from '../shared/constants';
+import { formatShortcutLabel } from '../shared/shortcut';
 import {
   MAX_RENDERER_RECREATES_PER_MINUTE,
   decideCrashAction,
   recreateDelayMs,
 } from '../shared/crashPolicy';
 import { nextDndProbeDelayMs } from '../shared/dndPolicy';
-import type { DockState, RemindEvent, RemindKind, ThemeScheme, WindowMode } from '../shared/types';
+import type {
+  DockState,
+  RemindEvent,
+  RemindKind,
+  ShortcutInfo,
+  ThemeScheme,
+  WindowMode,
+} from '../shared/types';
 import { AutostartService } from './autostart';
 import { DataTransferService } from './dataTransfer';
 import { DndService } from './dnd';
@@ -86,6 +95,9 @@ let currentMode: WindowMode = 'normal';
 let effectiveClickThrough = false;
 /** 全局唤回快捷键是否注册成功（失败时托盘双击仍可用） */
 let restoreShortcutRegistered = false;
+/** 实际注册成功的组合；默认值在启动时被第一个可用候选覆盖 */
+let restoreShortcut: string = RESTORE_SHORTCUT;
+let restoreShortcutLabel = formatShortcutLabel(restoreShortcut);
 /** 首次进入紧凑态的提示每次进程只弹一次 */
 let compactHintShown = false;
 
@@ -374,8 +386,17 @@ function checkForUpdatesFromTray(): void {
 
 function compactTooltip(): string {
   return restoreShortcutRegistered
-    ? `${APP_TITLE} · 双击托盘或 Ctrl+Alt+P 展开`
+    ? `${APP_TITLE} · 双击托盘或 ${restoreShortcutLabel} 展开`
     : `${APP_TITLE} · 双击托盘展开`;
+}
+
+/** 供设置页展示实际生效的唤回组合（主进程是唯一权威）。 */
+function getShortcutInfo(): ShortcutInfo {
+  return {
+    accelerator: restoreShortcut,
+    label: restoreShortcutLabel,
+    registered: restoreShortcutRegistered,
+  };
 }
 
 /** 从紧凑态唤回：托盘双击/菜单、全局快捷键共用；普通态只负责显示。 */
@@ -568,6 +589,7 @@ app.whenReady().then(() => {
     dock: handleDock,
     undock: handleUndock,
     requestQuit,
+    getShortcutInfo,
   });
 
   trayService = new TrayService({
@@ -586,11 +608,27 @@ app.whenReady().then(() => {
   });
   trayService.init();
 
-  // 紧凑态穿透后的全局唤回；注册失败不阻塞，托盘双击/菜单仍可用
-  if (!E2E) {
-    restoreShortcutRegistered = globalShortcut.register(RESTORE_SHORTCUT, expandFromCompact);
+  // 紧凑态穿透后的全局唤回；默认组合常被截图/录屏/输入法占用，
+  // 逐个尝试候选，注册失败不阻塞，托盘双击/菜单仍可用。
+  // E2E 默认跳过全局热键，避免测试占用开发者组合；单独用
+  // POMODORO_E2E_SHORTCUT=1 打开，用于验证真实注册结果。
+  if (!E2E || process.env.POMODORO_E2E_SHORTCUT === '1') {
+    for (const accelerator of RESTORE_SHORTCUT_CANDIDATES) {
+      if (globalShortcut.register(accelerator, expandFromCompact)) {
+        restoreShortcut = accelerator;
+        restoreShortcutLabel = formatShortcutLabel(accelerator);
+        restoreShortcutRegistered = true;
+        logger.info(
+          `restore shortcut registered: ${accelerator}${
+            accelerator === RESTORE_SHORTCUT ? '' : ' (fallback)'
+          }`
+        );
+        break;
+      }
+      logger.warn(`restore shortcut unavailable: ${accelerator}`);
+    }
     if (!restoreShortcutRegistered) {
-      logger.warn(`restore shortcut registration failed: ${RESTORE_SHORTCUT}`);
+      logger.warn('restore shortcut registration failed: all candidates unavailable');
     }
   }
 

@@ -12,6 +12,7 @@ import type {
   HistoryStats,
   IpcResult,
   Settings,
+  ShortcutInfo,
   TimerCommand,
   TimerState,
   UpdateStatus,
@@ -41,6 +42,8 @@ export interface IpcDeps {
   /** 数据备份/恢复（设置 + 历史统计） */
   dataTransfer: DataTransferService;
   requestQuit: () => void;
+  /** 当前实际注册成功的全局唤回快捷键 */
+  getShortcutInfo: () => ShortcutInfo;
 }
 
 function ok<T>(data: T): IpcResult<T> {
@@ -172,6 +175,10 @@ export function registerIpc(deps: IpcDeps): void {
     logger.info('app quit requested');
     deps.requestQuit();
     return ok(null);
+  });
+
+  ipcMain.handle(IpcChannels.SHORTCUT_GET, (): IpcResult<ShortcutInfo> => {
+    return ok(deps.getShortcutInfo());
   });
 
   logger.info('ipc handlers registered');

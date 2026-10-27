@@ -2,7 +2,7 @@
 
 > 不打扰剪辑节奏的常驻桌面番茄钟：240×240 透明置顶小窗，不抢焦点、不占任务栏，到点只轻提示。
 
-Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.3
+Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.4
 
 <p align="center">
   <img src="docs/screenshots/main.png" width="240" alt="主界面" />
@@ -45,8 +45,8 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.3
 
 **安装版（推荐）**
 
-1. 打开 [Releases · v0.3.3](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.3)。
-2. 下载 `pomodoro-widget-setup-0.3.3.exe` 并安装。
+1. 打开 [Releases · v0.3.4](https://github.com/agkp4ever-creator/kp-dsh/releases/tag/v0.3.4)。
+2. 下载 `pomodoro-widget-setup-0.3.4.exe` 并安装。
 3. 安装版内置自动更新：设置 →「检查更新」，有新版本时下载并重启安装。
 
 **绿色版**
@@ -60,7 +60,8 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.3
 ## 使用
 
 - **移动**：拖动顶栏空白处。
-- **收起**：点顶栏 `➖`，窗口缩到 160×160 并变为 62% 不透明度；默认开启鼠标穿透，剪辑时点到也不会误触。双击托盘图标、托盘菜单「展开挂件」或按 `Ctrl+Alt+P` 恢复。
+- **收起**：点顶栏 `➖`，窗口缩到 160×160 并变为 62% 不透明度；默认开启鼠标穿透，剪辑时点到也不会误触。双击托盘图标、托盘菜单「展开挂件」或按全局快捷键恢复。
+- **全局快捷键**：默认 `Ctrl+Alt+P`。若被截图/录屏/输入法等软件占用，启动时会自动降级为 `Ctrl+Alt+Shift+P` 或 `Alt+Shift+P`；实际生效的组合显示在托盘提示和设置页「外观」分组里。
 - **设置**：点 `⚙`，可调专注/短休/长休时长、长休间隔、音量与静音、护眼/久坐开关、开机自启、勿扰、主题、紧凑态鼠标穿透，查看近 7 天历史统计、导出/导入数据备份，以及检查更新。关闭穿透后，点紧凑窗任意位置恢复。
 - **退出**：点 `✕` 退出；点窗口关闭按钮则收进托盘继续计时。
 - **托盘**：右键托盘图标可显示挂件、打开设置、重启界面或退出。
@@ -91,6 +92,12 @@ Windows 10/11 x64 · Electron 31 + React 18 + TypeScript · v0.3.3
 - 日志超过 1MB 轮转并保留 2 份；生产构建注入 CSP。
 
 ## 更新日志
+
+### v0.3.4
+
+- 修复全局唤回快捷键失效：`Ctrl+Alt+P` 常被截图/录屏/输入法软件占用，启动时会记录失败原因并按 `Ctrl+Alt+Shift+P`、`Alt+Shift+P` 顺序自动降级。
+- 设置页「外观」分组显示当前实际生效的快捷键；紧凑窗悬浮提示与托盘提示同步更新，不再写死 `Ctrl+Alt+P`。
+- 新增 `shortcut:get` IPC 与 `formatShortcutLabel` 纯函数；断言覆盖候选降级、IPC 接线与设置页展示。
 
 ### v0.3.3
 

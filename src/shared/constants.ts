@@ -32,6 +32,7 @@ export const IpcChannels = {
   DATA_EXPORT: 'data:export',
   DATA_IMPORT: 'data:import',
   APP_QUIT: 'app:quit',
+  SHORTCUT_GET: 'shortcut:get',
 } as const;
 
 export const TIMER_COMMANDS: readonly TimerCommand[] = ['start', 'pause', 'reset', 'skip'];
@@ -87,8 +88,18 @@ export const WINDOW_COMPACT_OPACITY = 0.62;
 
 export const APP_TITLE = '番茄钟挂件';
 
-/** 紧凑态鼠标穿透后，全局唤回快捷键（可在实现中降级为托盘双击） */
-export const RESTORE_SHORTCUT = 'CommandOrControl+Alt+P';
+/**
+ * 紧凑态鼠标穿透后的全局唤回快捷键候选。
+ * 第一项是产品默认值；若被其他软件占用，启动时按顺序降级注册，
+ * 实际生效的组合通过托盘提示与设置页展示。
+ */
+export const RESTORE_SHORTCUT_CANDIDATES = [
+  'CommandOrControl+Alt+P',
+  'CommandOrControl+Alt+Shift+P',
+  'Alt+Shift+P',
+] as const;
+
+export const RESTORE_SHORTCUT = RESTORE_SHORTCUT_CANDIDATES[0];
 
 /** 默认设置（PRD v0.2.1：focus 25 / 短休 5 / 长休 60 / 自启 true / theme minimal） */
 export const DEFAULT_SETTINGS: Settings = {
