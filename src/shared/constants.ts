@@ -87,6 +87,9 @@ export const WINDOW_COMPACT_OPACITY = 0.62;
 
 export const APP_TITLE = '番茄钟挂件';
 
+/** 紧凑态鼠标穿透后，全局唤回快捷键（可在实现中降级为托盘双击） */
+export const RESTORE_SHORTCUT = 'CommandOrControl+Alt+P';
+
 /** 默认设置（PRD v0.2.1：focus 25 / 短休 5 / 长休 60 / 自启 true / theme minimal） */
 export const DEFAULT_SETTINGS: Settings = {
   focusMinutes: 25,
@@ -104,6 +107,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sedentaryEnabled: true,
   sedentaryIntervalMinutes: 45,
   dndMode: false,
+  compactClickThrough: true,
 };
 
 /** QA 测试钩子：覆盖阶段时长（毫秒），未设置时按 settings 分钟数 */

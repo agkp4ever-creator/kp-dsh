@@ -1,6 +1,6 @@
 {
   "name": "pomodoro_desktop_widget",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "description": "番茄钟桌面挂件 - 不打扰剪辑节奏的常驻置顶小窗（完整版）",
   "author": "gao",
@@ -14,7 +14,7 @@
     "test:theme": "node tests/theme-assert.mjs",
     "test:update": "node tests/update-assert.mjs",
     "test:data": "node tests/stats-data-assert.mjs",
-    "test:e2e": "node tests/e2e/smoke.spec.mjs && node tests/e2e/crash-recovery.spec.mjs && node tests/e2e/stats-data.spec.mjs",
+    "test:e2e": "node tests/e2e/smoke.spec.mjs && node tests/e2e/compact-click-through.spec.mjs && node tests/e2e/crash-recovery.spec.mjs && node tests/e2e/stats-data.spec.mjs",
     "test:upgrade": "node tests/e2e/real-upgrade.spec.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "dist:win": "electron-vite build && electron-builder --win",

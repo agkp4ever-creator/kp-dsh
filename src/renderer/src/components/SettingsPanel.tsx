@@ -365,6 +365,14 @@ export function SettingsPanel({
             value={settings.theme}
             onChange={(next) => onUpdate({ theme: next })}
           />
+          <Toggle
+            label="紧凑态鼠标穿透"
+            checked={settings.compactClickThrough}
+            onChange={(next) => onUpdate({ compactClickThrough: next })}
+          />
+          <p className="setting-row__hint">
+            开启后紧凑窗不接收鼠标；双击托盘、托盘菜单「展开挂件」或按 Ctrl+Alt+P 展开。
+          </p>
         </Section>
 
         <Section title="数据">

@@ -117,6 +117,8 @@ export function sanitizeSettings(patch: Record<string, unknown>, base: Settings)
         out.sedentaryEnabled = value;
       } else if (key === 'dndMode') {
         out.dndMode = value;
+      } else if (key === 'compactClickThrough') {
+        out.compactClickThrough = value;
       }
     }
   };
@@ -135,6 +137,7 @@ export function sanitizeSettings(patch: Record<string, unknown>, base: Settings)
   applyBoolean('eyeCareEnabled');
   applyBoolean('sedentaryEnabled');
   applyBoolean('dndMode');
+  applyBoolean('compactClickThrough');
 
   const theme = patch['theme'];
   if (typeof theme === 'string' && (THEME_NAMES as readonly string[]).includes(theme)) {

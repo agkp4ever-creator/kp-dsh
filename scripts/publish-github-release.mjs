@@ -126,13 +126,16 @@ function upload(releaseId, name, file) {
 
 const body = `## 番茄钟桌面挂件 ${tag}
 
-### 性能
-- 计时圆环从 60fps rAF 改为 1fps 快照，隐藏窗口停止补间
-- 勿扰探测降至运行 30s / 空闲 120s / 隐藏 300s / 降级 600s；提醒前即时探测
+### 新功能
+- 紧凑态默认鼠标穿透：160×160 半透明小窗不再拦截剪辑操作，点击会落到下方软件
+- 唤回方式：托盘双击、托盘菜单「展开挂件」或全局快捷键 \`Ctrl+Alt+P\`
+- 设置页新增「紧凑态鼠标穿透」开关；关闭后恢复点击紧凑窗展开的旧行为
+- 首次进入紧凑态弹托盘提示
 
-### 发布
-- 补齐项目介绍、截图与版本更新日志
-- 安装版自动更新源切换为 GitHub Releases
+### 测试
+- 新增 \`compact-click-through\` e2e：普通态不穿透、紧凑态穿透、展开恢复、设置开关回退
+- 真机鼠标点击验证：点击落到下方记事本，挂件保持 compact/160
+- \`test:assert\` 与四套 e2e 全通过
 
 ### 安装
 下载 \`pomodoro-widget-setup-${version}.exe\`。安装包未签名，Windows SmartScreen 可能提示“未知发布者”，选择“仍要运行”即可。`;
@@ -146,7 +149,7 @@ if (release === null) {
     body: JSON.stringify({
       tag_name: tag,
       target_commitish: 'main',
-      name: `${tag} · 性能优化与项目介绍`,
+      name: `${tag} · 紧凑态鼠标穿透`,
       body,
       draft: false,
       prerelease: false,

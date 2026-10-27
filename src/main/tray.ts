@@ -19,6 +19,8 @@ export interface TrayDeps {
   checkForUpdates: () => void;
   /** 用户主动重建渲染窗口（崩溃限流放弃后的手动恢复入口） */
   restartWindow: () => void;
+  /** 从紧凑态展开为普通态（穿透后托盘/快捷键的唤回入口） */
+  expandWindow: () => void;
   /** 供菜单刷新时读取窗口（保留扩展点） */
   getWindow: () => BrowserWindow | null;
 }
@@ -40,9 +42,9 @@ export class TrayService {
     this.tray = new Tray(image);
     this.tray.setToolTip(APP_TITLE);
     this.setMenu();
-    // Windows 托盘惯例：双击显示挂件
+    // Windows 托盘惯例：双击显示挂件；紧凑态穿透后这是主要唤回入口
     this.tray.on('double-click', () => {
-      this.deps.showWindow();
+      this.deps.expandWindow();
     });
     logger.info('tray initialized');
   }
@@ -54,6 +56,7 @@ export class TrayService {
     }
     const menu = Menu.buildFromTemplate([
       { label: '显示挂件', click: () => this.deps.showWindow() },
+      { label: '展开挂件', click: () => this.deps.expandWindow() },
       {
         label: '设置',
         click: () => {
@@ -72,6 +75,22 @@ export class TrayService {
   /** 更新悬停提示（例如界面停止后引导用户从托盘重启） */
   setToolTip(text: string): void {
     this.tray?.setToolTip(text);
+  }
+
+  /** 首次进入紧凑态时提示唤回方式；专注助手可能拦截气泡，失败不影响功能 */
+  showCompactHint(): void {
+    if (this.tray === null || process.platform !== 'win32') {
+      return;
+    }
+    try {
+      this.tray.displayBalloon({
+        title: APP_TITLE,
+        content: '紧凑态已鼠标穿透：双击托盘、托盘菜单「展开挂件」或按 Ctrl+Alt+P 展开。',
+        iconType: 'info',
+      });
+    } catch (err) {
+      logger.warn(`tray balloon failed: ${String(err)}`);
+    }
   }
 
   dispose(): void {

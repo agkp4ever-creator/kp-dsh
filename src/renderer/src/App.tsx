@@ -259,13 +259,17 @@ export default function App(): JSX.Element {
     );
   }
 
-  // 紧凑模式：160×160 只显示圆环（点击恢复普通模式）
+  // 紧凑模式：160×160 只显示圆环（穿透开启时点击落到下层，唤回走托盘/快捷键）
   if (windowMode === 'compact') {
     return (
       <div
         className="app-shell app-shell--compact"
-        title="点击恢复普通模式"
-        onClick={() => requestMode('normal')}
+        title={
+          settings.compactClickThrough
+            ? '紧凑态鼠标穿透：双击托盘或 Ctrl+Alt+P 展开'
+            : '点击恢复普通模式'
+        }
+        onClick={settings.compactClickThrough ? undefined : () => requestMode('normal')}
       >
         <main className="app-body app-body--compact">
           <TimerRing
@@ -290,6 +294,7 @@ export default function App(): JSX.Element {
         windowMode={windowMode}
         quiet={quiet}
         quietAuto={dnd.auto}
+        compactClickThrough={settings.compactClickThrough}
         onOpenSettings={() => requestMode('settings')}
         onToggleCompact={() => requestMode('compact')}
         onDock={requestDock}

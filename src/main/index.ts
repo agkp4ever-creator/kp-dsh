@@ -4,11 +4,12 @@
  * P1：健康提醒与番茄到点提醒在合并窗口内只发一条（防双音轰炸）；主题深浅色随 nativeTheme 推送。
  */
 import './bootstrap';
-import { app, BrowserWindow, dialog, nativeTheme, powerMonitor } from 'electron';
+import { app, BrowserWindow, dialog, globalShortcut, nativeTheme, powerMonitor } from 'electron';
 import {
   APP_TITLE,
   IpcChannels,
   REMIND_MERGE_MS,
+  RESTORE_SHORTCUT,
   UNRESPONSIVE_GRACE_MS as DEFAULT_UNRESPONSIVE_GRACE_MS,
 } from '../shared/constants';
 import {
@@ -38,6 +39,7 @@ import {
   markQuitting,
   persistWindowPos,
   resetDockRuntime,
+  setWindowClickThrough,
   undockWindow,
 } from './window';
 
@@ -80,6 +82,12 @@ let healthService: HealthReminderService | null = null;
 let dndService: DndService | null = null;
 let updaterService: UpdaterService | null = null;
 let currentMode: WindowMode = 'normal';
+/** 当前窗口是否实际处于鼠标穿透（供设置变更/E2E 状态使用） */
+let effectiveClickThrough = false;
+/** 全局唤回快捷键是否注册成功（失败时托盘双击仍可用） */
+let restoreShortcutRegistered = false;
+/** 首次进入紧凑态的提示每次进程只弹一次 */
+let compactHintShown = false;
 
 /** 勿扰探测的动态调度句柄（按 dndPolicy 降频，替代 DndService 内部常驻 interval） */
 let dndProbeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -364,6 +372,27 @@ function checkForUpdatesFromTray(): void {
   void updaterService?.check(true);
 }
 
+function compactTooltip(): string {
+  return restoreShortcutRegistered
+    ? `${APP_TITLE} · 双击托盘或 Ctrl+Alt+P 展开`
+    : `${APP_TITLE} · 双击托盘展开`;
+}
+
+/** 从紧凑态唤回：托盘双击/菜单、全局快捷键共用；普通态只负责显示。 */
+function expandFromCompact(): void {
+  const win = mainWindow;
+  if (win === null || win.isDestroyed()) {
+    return;
+  }
+  if (getDockState().docked) {
+    handleUndock();
+  }
+  win.showInactive();
+  if (currentMode === 'compact') {
+    setWindowMode('normal');
+  }
+}
+
 function setWindowMode(mode: WindowMode): void {
   const previousMode = currentMode;
   // 重复请求同一模式（双击最小化/还原）直接忽略，避免重启动画打断终帧。
@@ -375,10 +404,17 @@ function setWindowMode(mode: WindowMode): void {
   if (win !== null && !win.isDestroyed()) {
     // 只有最小化/还原做 240↔160 补间；进入/退出设置页保持即时，避免输入框在动画中抢焦点。
     const animated = mode === 'compact' || (previousMode === 'compact' && mode === 'normal');
-    applyWindowMode(win, mode, animated);
+    const clickThrough = mode === 'compact' && settingsService.get().compactClickThrough;
+    effectiveClickThrough = clickThrough;
+    applyWindowMode(win, mode, animated, clickThrough);
     sendToRenderer(IpcChannels.WINDOW_MODE_CHANGED, mode);
     // P1-7：收纳态下切模式会隐式展开，同步广播收纳态，避免渲染层仍渲染把手
     sendToRenderer(IpcChannels.WINDOW_DOCKED, getDockState());
+    trayService?.setToolTip(mode === 'compact' ? compactTooltip() : APP_TITLE);
+    if (mode === 'compact' && !compactHintShown && !E2E) {
+      compactHintShown = true;
+      trayService?.showCompactHint();
+    }
   }
 }
 
@@ -494,6 +530,15 @@ app.whenReady().then(() => {
     if (dndService !== null) {
       sendToRenderer(IpcChannels.DND_STATE, dndService.getState());
     }
+    // 紧凑态穿透开关：立即生效（普通态在下次进入紧凑时读取）
+    if (currentMode === 'compact') {
+      effectiveClickThrough = settings.compactClickThrough;
+      const win = mainWindow;
+      if (win !== null && !win.isDestroyed()) {
+        setWindowClickThrough(win, effectiveClickThrough);
+      }
+      trayService?.setToolTip(effectiveClickThrough ? compactTooltip() : APP_TITLE);
+    }
   });
 
   statsService.onChange((stats) => {
@@ -537,8 +582,17 @@ app.whenReady().then(() => {
     requestQuit,
     checkForUpdates: checkForUpdatesFromTray,
     restartWindow: restartRenderer,
+    expandWindow: expandFromCompact,
   });
   trayService.init();
+
+  // 紧凑态穿透后的全局唤回；注册失败不阻塞，托盘双击/菜单仍可用
+  if (!E2E) {
+    restoreShortcutRegistered = globalShortcut.register(RESTORE_SHORTCUT, expandFromCompact);
+    if (!restoreShortcutRegistered) {
+      logger.warn(`restore shortcut registration failed: ${RESTORE_SHORTCUT}`);
+    }
+  }
 
   // 渲染层就绪/刷新后立即回推权威状态（T05 验收：刷新后以主进程为准恢复）
   bindWindow(mainWindow);
@@ -549,6 +603,17 @@ app.whenReady().then(() => {
     // 暴露手动重启入口，供 e2e 在「重建失败/限流放弃」场景下验证恢复路径
     (globalThis as { __pomodoroRestartRenderer?: () => void }).__pomodoroRestartRenderer =
       restartRenderer;
+    // 暴露展开入口与窗口状态，验证 compact 穿透/唤回而不依赖 CDP 点击
+    (globalThis as { __pomodoroExpandWindow?: () => void }).__pomodoroExpandWindow =
+      expandFromCompact;
+    (
+      globalThis as {
+        __pomodoroWindowState?: () => { mode: WindowMode; clickThrough: boolean };
+      }
+    ).__pomodoroWindowState = () => ({
+      mode: currentMode,
+      clickThrough: effectiveClickThrough,
+    });
   }
 
   // 渲染进程崩溃恢复：仅异常退出重建，60s 内最多 3 次，防止崩溃循环；
@@ -618,6 +683,7 @@ app.whenReady().then(() => {
 // 真退出前落标志（close 拦截据此放行）
 app.on('before-quit', () => {
   markQuitting();
+  globalShortcut.unregisterAll();
   persistWindowPos(mainWindow);
 });
 

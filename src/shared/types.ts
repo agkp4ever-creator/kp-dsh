@@ -60,6 +60,8 @@ export interface Settings {
   sedentaryIntervalMinutes: number;
   /** P1-6 手动勿扰（提醒仅视觉，不发声） */
   dndMode: boolean;
+  /** 紧凑态鼠标穿透：开启后紧凑窗不接收鼠标，靠托盘/快捷键唤回 */
+  compactClickThrough: boolean;
 }
 
 // ---------- 今日统计 ----------

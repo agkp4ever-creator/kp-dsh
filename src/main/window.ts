@@ -156,7 +156,20 @@ export function createMainWindow(): BrowserWindow {
  * setFocusable 放在尺寸操作之前：WS_EX_NOACTIVATE 样式切换会触发
  * SetWindowPos(SWP_FRAMECHANGED)，置于 resize 之后可能把尺寸顶回旧值。
  */
-export function applyWindowMode(win: BrowserWindow, mode: WindowMode, animate = false): void {
+export function setWindowClickThrough(win: BrowserWindow, enabled: boolean): void {
+  if (win.isDestroyed()) {
+    return;
+  }
+  // Windows 透明置顶窗默认仍会拦截鼠标；compact 态需整窗放行给下层剪辑软件。
+  win.setIgnoreMouseEvents(enabled);
+}
+
+export function applyWindowMode(
+  win: BrowserWindow,
+  mode: WindowMode,
+  animate = false,
+  clickThrough = false
+): void {
   // P1-7：收纳态下切模式（托盘「设置」等）先立即展开回收纳前 bounds，再走常规 resize，
   // 避免逐帧动画与 setBounds 抢写同一窗口位置。
   if (dockRuntime.docked) {
@@ -164,6 +177,8 @@ export function applyWindowMode(win: BrowserWindow, mode: WindowMode, animate = 
   }
   // 模式切换会改写目标尺寸：先停掉可能仍在跑的收纳/模式动画，避免它继续写旧目标。
   cancelDockAnimation();
+  // 穿透必须在动画前生效：compact 收缩的 160ms 里也不能挡住剪辑软件点击。
+  setWindowClickThrough(win, mode === 'compact' && clickThrough);
 
   const size = WINDOW_SIZES[mode];
   const targetOpacity = mode === 'compact' ? WINDOW_COMPACT_OPACITY : 1;

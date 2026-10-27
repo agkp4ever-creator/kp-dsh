@@ -490,6 +490,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.setting-row__hint {
+  margin: -2px 0 4px;
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  opacity: 0.85;
+}
+
 /* 时长微调：一体化胶囊 */
 .stepper {
   display: inline-flex;

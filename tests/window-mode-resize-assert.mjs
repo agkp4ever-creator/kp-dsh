@@ -24,6 +24,13 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const windowTs = readFileSync(join(root, 'src', 'main', 'window.ts'), 'utf-8');
 const indexTs = readFileSync(join(root, 'src', 'main', 'index.ts'), 'utf-8');
 const constantsTs = readFileSync(join(root, 'src', 'shared', 'constants.ts'), 'utf-8');
+const trayTs = readFileSync(join(root, 'src', 'main', 'tray.ts'), 'utf-8');
+const typesTs = readFileSync(join(root, 'src', 'shared', 'types.ts'), 'utf-8');
+const storeTs = readFileSync(join(root, 'src', 'main', 'store.ts'), 'utf-8');
+const settingsPanelTs = readFileSync(
+  join(root, 'src', 'renderer', 'src', 'components', 'SettingsPanel.tsx'),
+  'utf-8'
+);
 
 let failed = 0;
 
@@ -80,7 +87,7 @@ console.log('== 3. 静态断言：最小化/还原动画与半透明 ==');
 
 check(
   'applyWindowMode 接受 animate 参数（默认 false，不影响设置页/启动）',
-  /export function applyWindowMode\(win: BrowserWindow, mode: WindowMode, animate = false\)/.test(
+  /export function applyWindowMode\(\s*win: BrowserWindow,\s*mode: WindowMode,\s*animate = false,\s*clickThrough = false\s*\)/.test(
     windowTs
   )
 );
@@ -102,7 +109,7 @@ check(
 );
 check(
   '模式切换前取消进行中的动画，避免旧 timer 写回旧目标',
-  /cancelDockAnimation\(\);\s*\n\s*const size = WINDOW_SIZES\[mode\]/.test(body)
+  /cancelDockAnimation\(\);[\s\S]{0,220}const size = WINDOW_SIZES\[mode\]/.test(body)
 );
 check(
   '同模式重复请求直接忽略（双击最小化不重启动画）',
@@ -118,6 +125,39 @@ check(
   'compact 不透明度常量为 0.62',
   /WINDOW_COMPACT_OPACITY = 0\.62/.test(constantsTs)
 );
+
+console.log('== 3b. 静态断言：紧凑态鼠标穿透与唤回 ==');
+
+check(
+  '窗口穿透 helper 调用 setIgnoreMouseEvents',
+  /export function setWindowClickThrough[\s\S]{0,220}setIgnoreMouseEvents/.test(windowTs)
+);
+check(
+  'applyWindowMode 仅 compact 且开关开启时穿透',
+  /setWindowClickThrough\(win, mode === 'compact' && clickThrough\)/.test(body)
+);
+check('Settings 增加 compactClickThrough 字段', /compactClickThrough: boolean/.test(typesTs));
+check('默认开启紧凑态穿透', /compactClickThrough: true/.test(constantsTs));
+check(
+  '设置清洗白名单包含 compactClickThrough',
+  /key === 'compactClickThrough'/.test(storeTs) && /applyBoolean\('compactClickThrough'\)/.test(storeTs)
+);
+check(
+  'setWindowMode 读取 compactClickThrough 设置',
+  /settingsService\.get\(\)\.compactClickThrough/.test(indexTs)
+);
+check(
+  '托盘双击走 expandWindow',
+  /this\.tray\.on\('double-click'[\s\S]{0,120}expandWindow\(\)/.test(trayTs)
+);
+check('托盘菜单包含「展开挂件」', /label: '展开挂件'/.test(trayTs));
+check('托盘提供首次紧凑态提示', /showCompactHint/.test(trayTs));
+check(
+  '全局快捷键注册 RESTORE_SHORTCUT',
+  /globalShortcut\.register\(RESTORE_SHORTCUT, expandFromCompact\)/.test(indexTs)
+);
+check('退出时注销全局快捷键', /globalShortcut\.unregisterAll\(\)/.test(indexTs));
+check('设置面板包含「紧凑态鼠标穿透」开关', /紧凑态鼠标穿透/.test(settingsPanelTs));
 
 console.log('== 4. 模拟断言：Windows 收缩钳制行为 ==');
 

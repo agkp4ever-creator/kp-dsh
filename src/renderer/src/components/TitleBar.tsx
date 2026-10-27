@@ -14,6 +14,8 @@ export interface TitleBarProps {
   quiet: boolean;
   /** 勿扰来自自动检测（剪辑软件前台），用于区分角标提示文案 */
   quietAuto?: boolean;
+  /** 紧凑态是否开启鼠标穿透，用于按钮提示文案 */
+  compactClickThrough?: boolean;
   /** 设置模式下为「返回普通模式」，否则为「打开设置」 */
   onOpenSettings: () => void;
   /** 切换紧凑模式 */
@@ -47,6 +49,7 @@ export function TitleBar({
   windowMode,
   quiet,
   quietAuto = false,
+  compactClickThrough = true,
   onOpenSettings,
   onToggleCompact,
   onDock,
@@ -89,7 +92,11 @@ export function TitleBar({
           type="button"
           className="titlebar__icon-btn"
           aria-label="紧凑模式"
-          title="紧凑模式"
+          title={
+            compactClickThrough
+              ? '紧凑模式（穿透：双击托盘或 Ctrl+Alt+P 展开）'
+              : '紧凑模式（点击恢复）'
+          }
           onClick={onToggleCompact}
         >
           <Icon name="minimize" size={15} />

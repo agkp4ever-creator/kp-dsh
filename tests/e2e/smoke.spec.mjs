@@ -112,8 +112,13 @@ async function main() {
   );
   console.log(`  ✓ 最小化到 ${compact.width}×${compact.height}，透明度 ${compact.opacity}`);
 
-  // 点击紧凑窗恢复
-  await win.locator('.app-shell--compact').click({ position: { x: 80, y: 80 } });
+  // 紧凑态默认鼠标穿透：用主进程状态断言，不能靠 CDP 点击（CDP 会绕过系统命中测试）
+  const compactState = await app.evaluate(() => globalThis.__pomodoroWindowState?.());
+  assert.equal(compactState?.mode, 'compact', '紧凑态模式应为 compact');
+  assert.equal(compactState?.clickThrough, true, '紧凑态默认应开启鼠标穿透');
+
+  // 通过真实展开入口唤回（托盘/快捷键共用同一函数）
+  await app.evaluate(() => globalThis.__pomodoroExpandWindow?.());
   await win.waitForSelector('.titlebar', { timeout: 5_000 });
   await win.waitForTimeout(600);
   const normal = await windowInfo();
@@ -121,7 +126,10 @@ async function main() {
   assert.equal(normal.width, 240, `恢复宽应为 240，实际 ${normal.width}`);
   assert.equal(normal.height, 240, `恢复高应为 240，实际 ${normal.height}`);
   assert.ok(Math.abs(normal.opacity - 1) < 0.02, `恢复透明度应为 1，实际 ${normal.opacity}`);
-  console.log('  ✓ 点击恢复 240×240、100% 不透明');
+  const normalState = await app.evaluate(() => globalThis.__pomodoroWindowState?.());
+  assert.equal(normalState?.mode, 'normal', '展开后模式应为 normal');
+  assert.equal(normalState?.clickThrough, false, '展开后应关闭鼠标穿透');
+  console.log('  ✓ 紧凑态穿透，主进程展开回 240×240、100% 不透明');
 
   // 崩溃注入：等待主进程自动重建出新窗口
   const nextWindow = app.waitForEvent('window', { timeout: 30_000 });
